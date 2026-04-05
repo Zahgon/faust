@@ -350,15 +350,11 @@ class Param(Generic[IT, OT], property):
 
     def on_get_value(self, fun: OutputCallable) -> OutputCallable:
         """Decorator that adds a callback when this setting is retrieved."""
-        assert self._on_get_value_ is None
-        self._on_get_value_ = fun
-        return fun
+        pass
 
     def on_set_default(self, fun: OnDefaultCallable) -> OnDefaultCallable:
         """Decorator that adds a callback when a default value is used."""
-        assert self._on_set_default_ is None
-        self._on_set_default_ = fun
-        return fun
+        pass
 
     def __get__(self, obj: Any, type: Type = None) -> OT:
         if obj is None:
@@ -374,18 +370,11 @@ class Param(Generic[IT, OT], property):
 
     def on_get(self, conf: _Settings) -> OT:
         """What happens when the setting is accessed/retrieved."""
-        value = getattr(conf, self.storage_name)
-        if value is None and self.default_alias:
-            retval = getattr(conf, self.default_alias)
-        else:
-            retval = self.prepare_get(conf, value)
-        if self._on_get_value_ is not None:
-            return self._on_get_value_(conf, retval)
-        return retval
+        pass
 
     def prepare_get(self, conf: _Settings, value: OT) -> OT:
         """Prepare value when accessed/retrieved."""
-        return value
+        pass
 
     def on_set(self, settings: Any, value: OT) -> None:
         """What happens when the setting is stored/set."""
@@ -430,13 +419,7 @@ class Param(Generic[IT, OT], property):
 
     def build_deprecation_warning(self) -> str:
         """Build deprecation warning for this setting."""
-        alt_removal = ''
-        if self.version_removed:
-            alt_removal = self.deprecation_removal_warning.format(self=self)
-        return self.deprecation_warning_template.format(
-            self=self,
-            alt_removal=alt_removal,
-        )
+        pass
 
     def validate_before(self, value: IT = None) -> None:
         """Validate value before setting is converted to the target type."""
@@ -471,15 +454,15 @@ class Param(Generic[IT, OT], property):
 
     @property
     def active(self) -> bool:
-        return not bool(self.version_removed)
+        pass
 
     @property
     def deprecated(self) -> bool:
-        return bool(self.version_deprecated)
+        pass
 
     @property
     def class_name(self) -> str:
-        return type(self).__name__
+        pass
 
 
 class Bool(Param[Any, bool]):

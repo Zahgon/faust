@@ -16,32 +16,22 @@ class LeaderAssignor(Service, LeaderAssignorT):
         self.app = app
 
     async def on_start(self) -> None:
-        if not self.app.conf.topic_disable_leader:
-            await self._enable_leader_topic()
+        pass
 
     async def _enable_leader_topic(self) -> None:
-        leader_topic = self._leader_topic
-        await leader_topic.maybe_declare()
-        self.app.topics.add(leader_topic)
-        self.app.consumer.randomly_assigned_topics.add(
-            leader_topic.get_topic_name())
+        pass
 
     @cached_property
     def _leader_topic(self) -> TopicT:
-        return self.app.topic(
-            self._leader_topic_name,
-            partitions=1,
-            acks=False,
-            internal=True,
-        )
+        pass
 
     @cached_property
     def _leader_topic_name(self) -> str:
-        return f'{self.app.conf.id}-__assignor-__leader'
+        pass
 
     @cached_property
     def _leader_tp(self) -> TP:
-        return TP(self._leader_topic_name, 0)
+        pass
 
     def is_leader(self) -> bool:
         return self._leader_tp in self.app.consumer.assignment()

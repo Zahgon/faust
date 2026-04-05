@@ -52,44 +52,30 @@ class Table(TableT[KT, VT], Collection):
         raise KeyError(key)
 
     def _has_key(self, key: KT) -> bool:
-        return key in self
+        pass
 
     def _get_key(self, key: KT) -> VT:
         return self[key]
 
     def _set_key(self, key: KT, value: VT) -> None:
-        self[key] = value
+        pass
 
     def _del_key(self, key: KT) -> None:
-        del self[key]
+        pass
 
     def on_key_get(self, key: KT) -> None:
         """Call when the value for a key in this table is retrieved."""
-        self._sensor_on_get(self, key)
+        pass
 
     def on_key_set(self, key: KT, value: VT) -> None:
         """Call when the value for a key in this table is set."""
-        fut = self.send_changelog(self.partition_for_key(key), key, value)
-        # partition may be None, in which case the finalized partition
-        # is in fut.partition
-        partition = fut.message.partition
-        assert partition is not None
-        self._maybe_set_key_ttl(key, partition)
-        self._sensor_on_set(self, key, value)
+        pass
 
     def on_key_del(self, key: KT) -> None:
         """Call when a key in this table is removed."""
-        fut = self.send_changelog(self.partition_for_key(key), key, value=None,
-                                  value_serializer='raw')
-        partition = fut.message.partition
-        assert partition is not None
-        self._maybe_del_key_ttl(key, partition)
-        self._sensor_on_del(self, key)
+        pass
 
     def as_ansitable(self, title: str = '{table.name}',
                      **kwargs: Any) -> str:
         """Draw table as a a terminal ANSI table."""
-        return dict_as_ansitable(
-            self,
-            title=title.format(table=self),
-            **kwargs)
+        pass

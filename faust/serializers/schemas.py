@@ -70,22 +70,12 @@ class Schema(SchemaT):
     def loads_key(self, app: AppT, message: Message, *,
                   loads: Callable = None,
                   serializer: CodecArg = None) -> KT:
-        if loads is None:
-            loads = app.serializers.loads_key
-        return cast(KT, loads(
-            self.key_type, message.key,
-            serializer=serializer or self.key_serializer,
-        ))
+        pass
 
     def loads_value(self, app: AppT, message: Message, *,
                     loads: Callable = None,
                     serializer: CodecArg = None) -> VT:
-        if loads is None:
-            loads = app.serializers.loads_value
-        return loads(
-            self.value_type, message.value,
-            serializer=serializer or self.value_serializer,
-        )
+        pass
 
     def dumps_key(self, app: AppT, key: K, *,
                   serializer: CodecArg = None,

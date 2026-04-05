@@ -57,4 +57,4 @@ class Request(Struct, metaclass=abc.ABCMeta):  # type: ignore
 
     def expect_response(self) -> bool:
         """Return True if request type does not always return response."""
-        return True
+        pass

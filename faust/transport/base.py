@@ -65,9 +65,7 @@ class Transport(TransportT):
     def create_consumer(self, callback: ConsumerCallback,
                         **kwargs: Any) -> ConsumerT:
         """Create new consumer."""
-        return self.Consumer(self, callback=callback,
-                             loop=self.loop,
-                             **kwargs)
+        pass
 
     def create_producer(self, **kwargs: Any) -> ProducerT:
         """Create new producer."""
@@ -87,4 +85,4 @@ class Transport(TransportT):
 
     def create_conductor(self, **kwargs: Any) -> ConductorT:
         """Create new consumer conductor."""
-        return self.Conductor(app=self.app, loop=self.loop, **kwargs)
+        pass

@@ -186,18 +186,10 @@ class Case(Service):
 
     @Service.timer(10.0)
     async def _sampler(self) -> None:
-        await self._sample()
+        pass
 
     async def _sample(self) -> None:
-        if self.frequency_history:
-            self.frequency_avg = median(self.frequency_history)
-        if self.latency_history:
-            self.latency_avg = median(self.latency_history)
-        if self.runtime_history:
-            self.runtime_avg = median(self.runtime_history)
-
-        self.log.info('Stats: (median) frequency=%r latency=%r runtime=%r',
-                      self.frequency_avg, self.latency_avg, self.runtime_avg)
+        pass
 
     @asynccontextmanager
     async def maybe_trigger(
@@ -237,230 +229,104 @@ class Case(Service):
 
     async def resolve_signal(self, key: str, event: SignalEvent) -> None:
         """Mark test execution signal as resolved."""
-        await self.signals[event.signal_name].resolve(key, event)
+        pass
 
     async def execute(self, test: TestExecution) -> None:
         """Execute test using :class:`TestRunner`."""
-        t_start = monotonic()
-        runner = self.Runner(self, test, started=t_start)
-        with current_execution_stack.push(runner):
-            # resolve_models
-            await runner.execute()
+        pass
 
     async def on_test_start(self, runner: TestRunner) -> None:
         """Call when a test starts executing."""
-        started = runner.started
-        t_prev, self.last_test_received = self.last_test_received, started
-        if t_prev:
-            time_since = started - t_prev
-            wanted_frequency = self.frequency
-            if wanted_frequency:
-                latency = time_since - wanted_frequency
-                deque_pushpopmax(
-                    self.latency_history, latency, self.max_history)
-            deque_pushpopmax(
-                self.frequency_history, time_since, self.max_history)
+        pass
 
     async def on_test_skipped(self, runner: TestRunner) -> None:
         """Call when a test is skipped."""
-        # wait until we have fast forwarded before raising errors
-        # XXX should we use seek, or warn somehow if this
-        # takes too long?
-        self.last_test_received = monotonic()
+        pass
 
     async def on_test_failed(self,
                              runner: TestRunner,
                              exc: BaseException) -> None:
         """Call when invariant in test execution fails."""
-        await self._set_test_error_state(State.FAIL)
+        pass
 
     async def on_test_error(self,
                             runner: TestRunner,
                             exc: BaseException) -> None:
         """Call when a test execution raises an exception."""
-        await self._set_test_error_state(State.ERROR)
+        pass
 
     async def on_test_timeout(self,
                               runner: TestRunner,
                               exc: BaseException) -> None:
         """Call when a test execution times out."""
-        await self._set_test_error_state(State.TIMEOUT)
+        pass
 
     async def _set_test_error_state(self, state: State) -> None:
-        self.status = state
-        self.consecutive_failures += 1
-        self.total_failures += 1
-        self.total_by_state[state] += 1
-        if self.consecutive_failures >= self.max_consecutive_failures:
-            try:
-                raise SuiteFailed(
-                    'Failed after {0!r} (max={1!r})'.format(
-                        self.consecutive_failures,
-                        self.max_consecutive_failures))
-            except SuiteFailed as exc:
-                await self.on_suite_fail(exc)
+        pass
 
     def _set_pass_state(self, state: State) -> None:
-        assert state.is_ok()
-        self.status = state
-        self.consecutive_failures = 0
-        self.total_by_state[state] += 1
+        pass
 
     async def on_test_pass(self, runner: TestRunner) -> None:
         """Call when a test execution passes."""
-        test = runner.test
-        runtime: float = runner.runtime or 0.0
-        deque_pushpopmax(self.runtime_history, runtime, self.max_history)
-        ts = test.timestamp.timestamp()
-        last_fail = self.last_fail
-        if last_fail is None or ts > last_fail:
-            self._maybe_recover_from_failed_state()
+        pass
 
     async def post_report(self, report: TestReport) -> None:
         """Publish test report."""
-        await self.app.post_report(report)
+        pass
 
     @Service.task
     async def _send_frequency(self) -> None:
-        freq = self.frequency
-        if freq:
-            async for sleep_time in self.itertimer(
-                    freq, name=f'{self.name}_send'):
-                if self.app.is_leader():
-                    await self.make_fake_request()
+        pass
 
     async def make_fake_request(self) -> None:
         ...
 
     @Service.task
     async def _check_frequency(self) -> None:
-        timeout = self.warn_stalled_after
-        await self.sleep(timeout)
-        self.last_test_received = None
-        time_start = monotonic()
-        last_warning: Optional[float] = None
-        async for sleep_time in self.itertimer(
-                timeout, name=f'{self.name}._wempty'):
-            try:
-                now = monotonic()
-                can_warn = now - last_warning if last_warning else True
-                if can_warn:
-                    if self.last_test_received is not None:
-                        secs_since = now - self.last_test_received
-                    else:
-                        secs_since = now - time_start
-                    if secs_since > self.warn_stalled_after:
-                        human_secs = humanize_seconds(secs_since)
-                        # we reset the timer to avoid logging every second.
-                        last_warning = now
-                        raise SuiteStalled(
-                            f'Test stalled! Last received {human_secs} ago '
-                            f'(warn_stalled_after={timeout}).')
-                    else:
-                        self._maybe_recover_from_failed_state()
-            except SuiteStalled as exc:
-                # we don't want to propagate this here, keep running...
-                await self.on_suite_fail(exc, State.STALL)
+        pass
 
     async def on_suite_fail(self,
                             exc: SuiteFailed,
                             new_state: State = State.FAIL) -> None:
         """Call when the suite fails."""
-        assert isinstance(exc, SuiteFailed)
-        delay = self.state_transition_delay
-        if self.status.is_ok() or self._failed_longer_than(delay):
-            self.status = new_state
-            self.last_fail = monotonic()
-            self.log.exception(str(exc))
-            await self.post_report(TestReport(
-                case_name=self.name,
-                state=new_state,
-                test=None,
-                runtime=None,
-                signal_latency={},
-                error=str(exc),
-                traceback='\n'.join(traceback.format_tb(exc.__traceback__)),
-            ))
-        else:
-            self.status = new_state
-            self.last_fail = monotonic()
+        pass
 
     def _maybe_recover_from_failed_state(self) -> None:
-        if self.status != State.PASS:
-            if self._failed_longer_than(self.state_transition_delay):
-                self._set_pass_state(State.PASS)
+        pass
 
     def _failed_longer_than(self, secs: float) -> bool:
-        secs_since_fail = self.seconds_since_last_fail
-        if secs_since_fail is None:
-            return True
-        else:
-            return secs_since_fail > secs
+        pass
 
     @property
     def seconds_since_last_fail(self) -> Optional[float]:
         """Return number of seconds since any test failed."""
-        last_fail = self.last_fail
-        return monotonic() - last_fail if last_fail else None
+        pass
 
     async def get_url(self, url: Union[str, URL],
                       **kwargs: Any) -> Optional[bytes]:
         """Perform GET request using HTTP client."""
-        return await self.url_request('get', url, **kwargs)
+        pass
 
     async def post_url(self, url: Union[str, URL],
                        **kwargs: Any) -> Optional[bytes]:
         """Perform POST request using HTTP client."""
-        return await self.url_request('post', url, **kwargs)
+        pass
 
     async def url_request(self, method: str, url: Union[str, URL],
                           **kwargs: Any) -> Optional[bytes]:
         """Perform URL request using HTTP client."""
-        timeout = ClientTimeout(
-            # mypy thinks this must be float, but it can be None.
-            total=cast(float, self.url_timeout_total),
-            connect=cast(float, self.url_timeout_connect),
-        )
-        error_delay = self.url_error_delay_min
-        try:
-            for i in count():
-                try:
-                    async with self.app.http_client.request(
-                            method, url,
-                            timeout=timeout, **kwargs) as response:
-                        response.raise_for_status()
-                        payload = await response.read()
-                        self._maybe_recover_from_failed_state()
-                        return payload
-                except ClientError as exc:
-                    if i >= self.url_error_retries:
-                        raise ServiceDown(
-                            f'Cannot send fake test request: {exc!r}')
-                    retry_in = humanize_seconds(
-                        error_delay, microseconds=True)
-                    self.log.warning('URL %r raised: %r (Will retry in %s)',
-                                     url, exc, retry_in)
-                    error_delay = min(
-                        error_delay * self.url_error_delay_backoff,
-                        self.url_error_delay_max,
-                    )
-                    await self.sleep(error_delay)
-            else:  # pragma: no cover
-                pass
-        except ServiceDown as exc:
-            # we don't want to propagate this here, keep running...
-            await self.on_suite_fail(exc)
-        return None
+        pass
 
     @property
     def current_test(self) -> Optional[TestExecution]:
         """Return the currently active test in this task (if any)."""
-        return current_test_stack.top
+        pass
 
     @property
     def current_execution(self) -> Optional[TestRunner]:
         """Return the currently executing :class:`TestRunner` in this task."""
-        return current_execution_stack.top
+        pass
 
     @property
     def label(self) -> str:

@@ -212,24 +212,10 @@ class FieldDescriptor(FieldDescriptorT[T]):
         }
 
     def validate_all(self, value: Any) -> Iterable[ValidationError]:
-        need_coercion = not self.coerce
-        try:
-            v = self.prepare_value(value, coerce=need_coercion)
-        except (TypeError, ValueError) as exc:
-            vt = type(value)
-            yield self.validation_error(
-                f'{self.field} is not correct type for {self}, '
-                f'got {vt!r}: {exc!r}')
-        except Exception as exc:
-            yield self.validation_error(
-                f'{self.field} got internal error for value {value!r} '
-                f'{exc!r}')
-        else:
-            if v is not None or self.required:
-                yield from self.validate(cast(T, v))
+        pass
 
     def validate(self, value: T) -> Iterable[ValidationError]:
-        return iter([])
+        pass
 
     def to_python(self, value: Any) -> Optional[T]:
         to_python = self._to_python
@@ -272,16 +258,13 @@ class FieldDescriptor(FieldDescriptorT[T]):
 
         Supports recursive lookups e.g. ``model.getattr('x.y.z')``.
         """
-        return attrgetter('.'.join(reversed(list(self._parents_path()))))(obj)
+        pass
 
     def _parents_path(self) -> Iterable[str]:
-        node: Optional[FieldDescriptorT] = self
-        while node:
-            yield node.field
-            node = node.parent
+        pass
 
     def validation_error(self, reason: str) -> ValidationError:
-        return ValidationError(reason, field=self)
+        pass
 
     def __set__(self, instance: Any, value: T) -> None:
         value = cast(T, self.prepare_value(value))
@@ -299,25 +282,21 @@ class FieldDescriptor(FieldDescriptorT[T]):
     @property
     def ident(self) -> str:
         """Return the fields identifier."""
-        return f'{self.model.__name__}.{self.field}'
+        pass
 
     @cached_property
     def related_models(self) -> Set[Type[ModelT]]:
-        assert self._expr is not None
-        return self._expr.found_types[NodeType.MODEL]
+        pass
 
     @cached_property
     def lazy_coercion(self) -> bool:
-        assert self._expr is not None
-        return self._expr.has_generic_types or self._expr.has_models
+        pass
 
 
 class BooleanField(FieldDescriptor[bool]):
 
     def validate(self, value: T) -> Iterable[ValidationError]:
-        if not isinstance(value, bool):
-            yield self.validation_error(
-                f'{self.field} must be True or False, of type bool')
+        pass
 
     def prepare_value(self, value: Any, *,
                       coerce: bool = None) -> Optional[bool]:
@@ -344,17 +323,7 @@ class NumberField(FieldDescriptor[T]):
         })
 
     def validate(self, value: T) -> Iterable[ValidationError]:
-        val = cast(int, value)
-        max_ = self.max_value
-        if max_:
-            if val > max_:
-                yield self.validation_error(
-                    f'{self.field} cannot be more than {max_}')
-        min_ = self.min_value
-        if min_:
-            if val < min_:
-                yield self.validation_error(
-                    f'{self.field} must be at least {min_}')
+        pass
 
 
 class IntegerField(NumberField[int]):
@@ -400,25 +369,7 @@ class DecimalField(NumberField[Decimal]):
         return Decimal(value) if self.should_coerce(value, coerce) else value
 
     def validate(self, value: Decimal) -> Iterable[ValidationError]:
-        if not value.is_finite():  # check for Inf/NaN/sNaN/qNaN
-            yield self.validation_error(f'Illegal value in decimal: {value!r}')
-
-        decimal_tuple: Optional[DecimalTuple] = None
-
-        mdp = self.max_decimal_places
-        if mdp:
-            decimal_tuple = value.as_tuple()
-            if abs(decimal_tuple.exponent) > mdp:
-                yield self.validation_error(
-                    f'{self.field} must have less than {mdp} decimal places.')
-        max_digits = self.max_digits
-        if max_digits:
-            if decimal_tuple is None:
-                decimal_tuple = value.as_tuple()
-            digits = len(decimal_tuple.digits[:decimal_tuple.exponent])
-            if digits > max_digits:
-                yield self.validation_error(
-                    f'{self.field} must have less than {max_digits} digits.')
+        pass
 
 
 class CharField(FieldDescriptor[CharacterType]):
@@ -447,22 +398,7 @@ class CharField(FieldDescriptor[CharacterType]):
         )
 
     def validate(self, value: CharacterType) -> Iterable[ValidationError]:
-        allow_blank = self.allow_blank
-        if not allow_blank and not len(value):
-            yield self.validation_error(f'{self.field} cannot be left blank')
-        max_ = self.max_length
-        length = len(value)
-        min_ = self.min_length
-        if min_:
-            if length < min_:
-                chars = pluralize(min_, 'character')
-                yield self.validation_error(
-                    f'{self.field} must have at least {min_} {chars}')
-        if max_:
-            if length > max_:
-                chars = pluralize(max_, 'character')
-                yield self.validation_error(
-                    f'{self.field} must be at least {max_} {chars}')
+        pass
 
 
 class StringField(CharField[str]):

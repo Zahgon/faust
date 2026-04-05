@@ -71,7 +71,7 @@ class Store(StoreT[KT, VT], Service):
 
     async def need_active_standby_for(self, tp: TP) -> bool:
         """Return :const:`True` if we have a copy of standby from elsewhere."""
-        return True
+        pass
 
     async def on_rebalance(self,
                            table: CollectionT,
@@ -88,26 +88,19 @@ class Store(StoreT[KT, VT], Service):
         ...
 
     def _encode_key(self, key: KT) -> bytes:
-        key_bytes = self.app.serializers.dumps_key(
-            self.key_type, key, serializer=self.key_serializer)
-        if key_bytes is None:
-            raise TypeError('Table key cannot be None')
-        return key_bytes
+        pass
 
     def _encode_value(self, value: VT) -> Optional[bytes]:
-        return self.app.serializers.dumps_value(
-            self.value_type, value, serializer=self.value_serializer)
+        pass
 
     def _decode_key(self, key: Optional[bytes]) -> KT:
-        return cast(KT, self.app.serializers.loads_key(
-            self.key_type, key, serializer=self.key_serializer))
+        pass
 
     def _decode_value(self, value: Optional[bytes]) -> VT:
-        return self.app.serializers.loads_value(
-            self.value_type, value, serializer=self.value_serializer)
+        pass
 
     def _repr_info(self) -> str:
-        return f'table_name={self.table_name} url={self.url}'
+        pass
 
     @property
     def label(self) -> str:
@@ -187,17 +180,7 @@ class SerializedStore(Store[KT, VT]):
                               to_key: Callable[[Any], KT],
                               to_value: Callable[[Any], VT]) -> None:
         """Apply batch of events from changelog topic to this store."""
-        for event in batch:
-            key = event.message.key
-            if key is None:
-                raise TypeError(
-                    f'Changelog entry is missing key: {event.message}')
-            value = event.message.value
-            if value is None:
-                self._del(key)
-            else:
-                # keys/values are already JSON serialized in the message
-                self._set(key, value)
+        pass
 
     def __getitem__(self, key: KT) -> VT:
         value = self._get(self._encode_key(key))
@@ -225,24 +208,21 @@ class SerializedStore(Store[KT, VT]):
         return _SerializedStoreKeysView(self)
 
     def _keys_decoded(self) -> Iterator[KT]:
-        for key in self._iterkeys():
-            yield self._decode_key(key)
+        pass
 
     def values(self) -> ValuesView:
         """Return view of values in the K/V store."""
         return _SerializedStoreValuesView(self)
 
     def _values_decoded(self) -> Iterator[VT]:
-        for value in self._itervalues():
-            yield self._decode_value(value)
+        pass
 
     def items(self) -> ItemsView:
         """Return view of items in the K/V store as (key, value) pairs."""
         return _SerializedStoreItemsView(self)
 
     def _items_decoded(self) -> Iterator[Tuple[KT, VT]]:
-        for key, value in self._iteritems():
-            yield self._decode_key(key), self._decode_value(value)
+        pass
 
     def clear(self) -> None:
         """Clear all data from this K/V store."""

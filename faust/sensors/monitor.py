@@ -312,42 +312,13 @@ class Monitor(Sensor, KeywordReduce):
 
     @Service.task
     async def _sampler(self) -> None:
-        prev_message_total = self.messages_received_total
-        prev_event_total = self.events_total
-
-        async for sleep_time in self.itertimer(1.0, name='Monitor.sampler'):
-            prev_event_total, prev_message_total = self._sample(
-                prev_event_total, prev_message_total)
+        pass
 
     def _sample(self,
                 prev_event_total: int,
                 prev_message_total: int) -> Tuple[int, int]:
         # Update average event runtime.
-        if self.events_runtime:
-            self.events_runtime_avg = median(self.events_runtime)
-
-        # Update events/s
-        self.events_s, prev_event_total = (
-            self.events_total - prev_event_total,
-            self.events_total,
-        )
-
-        # Update messages/s
-        self.messages_s, prev_message_total = (
-            self.messages_received_total - prev_message_total,
-            self.messages_received_total)
-
-        if self.rebalance_return_latency:
-            self.rebalance_return_avg = median(self.rebalance_return_latency)
-
-        if self.rebalance_end_latency:
-            self.rebalance_end_avg = median(self.rebalance_end_latency)
-
-        if self.http_response_latency:
-            self.http_response_latency_avg = median(
-                self.http_response_latency)
-
-        return prev_event_total, prev_message_total
+        pass
 
     def asdict(self) -> Mapping:
         """Return monitor state as dictionary."""
@@ -427,42 +398,17 @@ class Monitor(Sensor, KeywordReduce):
 
     def on_message_in(self, tp: TP, offset: int, message: Message) -> None:
         """Call before message is delegated to streams."""
-        # WARNING: Sensors must never keep a reference to the Message,
-        #          as this means the message won't go out of scope!
-        self.messages_received_total += 1
-        self.messages_active += 1
-        self.messages_received_by_topic[tp.topic] += 1
-        self.tp_read_offsets[tp] = offset
-        message.time_in = self.time()
+        pass
 
     def on_stream_event_in(self, tp: TP, offset: int, stream: StreamT,
                            event: EventT) -> Optional[Dict]:
         """Call when stream starts processing an event."""
-        self.events_total += 1
-        self.stream_inbound_time[tp] = monotonic()
-        self.events_by_stream[str(stream)] += 1
-        self.events_by_task[str(stream.task_owner)] += 1
-        self.events_active += 1
-        return {
-            'time_in': self.time(),
-            'time_out': None,
-            'time_total': None,
-        }
+        pass
 
     def on_stream_event_out(self, tp: TP, offset: int, stream: StreamT,
                             event: EventT, state: Dict = None) -> None:
         """Call when stream is done processing an event."""
-        if state is not None:
-            time_out = self.time()
-            time_in = state['time_in']
-            time_total = time_out - time_in
-            self.events_active -= 1
-            state.update(
-                time_out=time_out,
-                time_total=time_total,
-            )
-            deque_pushpopmax(
-                self.events_runtime, time_total, self.max_avg_history)
+        pass
 
     def on_topic_buffer_full(self, tp: TP) -> None:
         """Call when conductor topic buffer is full and has to wait."""
@@ -473,43 +419,30 @@ class Monitor(Sensor, KeywordReduce):
                        offset: int,
                        message: Message) -> None:
         """Call when message is fully acknowledged and can be committed."""
-        self.messages_active -= 1
-        time_out = message.time_out = self.time()
-        time_in = message.time_in
-        if time_in is not None:
-            message.time_total = time_out - time_in
+        pass
 
     def on_table_get(self, table: CollectionT, key: Any) -> None:
         """Call when value in table is retrieved."""
-        self._table_or_create(table).keys_retrieved += 1
+        pass
 
     def on_table_set(self, table: CollectionT, key: Any, value: Any) -> None:
         """Call when new value for key in table is set."""
-        self._table_or_create(table).keys_updated += 1
+        pass
 
     def on_table_del(self, table: CollectionT, key: Any) -> None:
         """Call when key in a table is deleted."""
-        self._table_or_create(table).keys_deleted += 1
+        pass
 
     def _table_or_create(self, table: CollectionT) -> TableState:
-        try:
-            return self.tables[table.name]
-        except KeyError:
-            state = self.tables[table.name] = TableState(table)
-            return state
+        pass
 
     def on_commit_initiated(self, consumer: ConsumerT) -> Any:
         """Consumer is about to commit topic offset."""
-        return self.time()
+        pass
 
     def on_commit_completed(self, consumer: ConsumerT, state: Any) -> None:
         """Call when consumer commit offset operation completed."""
-        latency = self.time() - cast(float, state)
-        deque_pushpopmax(
-            self.commit_latency,
-            latency,
-            self.max_commit_latency_history,
-        )
+        pass
 
     def on_send_initiated(self, producer: ProducerT, topic: str,
                           message: PendingMessage,
@@ -533,7 +466,7 @@ class Monitor(Sensor, KeywordReduce):
                       exc: BaseException,
                       state: Any) -> None:
         """Call when producer was unable to publish message."""
-        self.send_errors += 1
+        pass
 
     def count(self, metric_name: str, count: int = 1) -> None:
         """Count metric by name."""
@@ -541,42 +474,33 @@ class Monitor(Sensor, KeywordReduce):
 
     def on_tp_commit(self, tp_offsets: TPOffsetMapping) -> None:
         """Call when offset in topic partition is committed."""
-        self.tp_committed_offsets.update(tp_offsets)
+        pass
 
     def track_tp_end_offset(self, tp: TP, offset: int) -> None:
         """Track new topic partition end offset for monitoring lags."""
-        self.tp_end_offsets[tp] = offset
+        pass
 
     def on_assignment_start(self,
                             assignor: PartitionAssignorT) -> Dict:
         """Partition assignor is starting to assign partitions."""
-        return {'time_start': self.time()}
+        pass
 
     def on_assignment_error(self,
                             assignor: PartitionAssignorT,
                             state: Dict,
                             exc: BaseException) -> None:
         """Partition assignor did not complete assignor due to error."""
-        time_total = self.time() - state['time_start']
-        deque_pushpopmax(
-            self.assignment_latency, time_total,
-            self.max_assignment_latency_history)
-        self.assignments_failed += 1
+        pass
 
     def on_assignment_completed(self,
                                 assignor: PartitionAssignorT,
                                 state: Dict) -> None:
         """Partition assignor completed assignment."""
-        time_total = self.time() - state['time_start']
-        deque_pushpopmax(
-            self.assignment_latency, time_total,
-            self.max_assignment_latency_history)
-        self.assignments_completed += 1
+        pass
 
     def on_rebalance_start(self, app: AppT) -> Dict:
         """Cluster rebalance in progress."""
-        self.rebalances = app.rebalancing_count
-        return {'time_start': self.time()}
+        pass
 
     def on_rebalance_return(self, app: AppT, state: Dict) -> None:
         """Consumer replied assignment is done to broker."""
@@ -594,20 +518,12 @@ class Monitor(Sensor, KeywordReduce):
 
     def on_rebalance_end(self, app: AppT, state: Dict) -> None:
         """Cluster rebalance fully completed (including recovery)."""
-        time_start = state['time_start']
-        time_end = self.time()
-        latency_end = time_end - time_start
-        state.update(
-            time_end=time_end,
-            latency_end=latency_end,
-        )
-        deque_pushpopmax(
-            self.rebalance_end_latency, latency_end, self.max_avg_history)
+        pass
 
     def on_web_request_start(self, app: AppT, request: web.Request, *,
                              view: web.View = None) -> Dict:
         """Web server started working on request."""
-        return {'time_start': self.time()}
+        pass
 
     def on_web_request_end(self,
                            app: AppT,
@@ -617,22 +533,10 @@ class Monitor(Sensor, KeywordReduce):
                            *,
                            view: web.View = None) -> None:
         """Web server finished working on request."""
-        status_code = HTTPStatus(
-            response.status if response is not None else 500)
-        time_start = state['time_start']
-        time_end = self.time()
-        latency_end = time_end - time_start
-        state.update(
-            time_end=time_end,
-            latency_end=latency_end,
-            status_code=status_code,
-        )
-        deque_pushpopmax(
-            self.http_response_latency, latency_end, self.max_avg_history)
-        self.http_response_codes[status_code] += 1
+        pass
 
     def _normalize(self, name: str,
                    *,
                    pattern: Pattern = RE_NORMALIZE,
                    substitution: str = RE_NORMALIZE_SUBSTITUTION) -> str:
-        return pattern.sub(substitution, name)
+        pass

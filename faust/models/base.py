@@ -210,16 +210,11 @@ class Model(ModelT):
 
     @classmethod
     def _maybe_reconstruct(cls, data: Any) -> Any:
-        model = cls._maybe_namespace(data)
-        return model.from_data(data) if model else data
+        pass
 
     @classmethod
     def _from_data_field(cls, data: Any) -> Optional['Model']:
-        if data is not None:
-            if cls.__is_abstract__:
-                return cls._maybe_reconstruct(data)
-            return cls.from_data(data, preferred_type=cls)
-        return None
+        pass
 
     @classmethod
     def loads(cls, s: bytes, *,
@@ -285,10 +280,7 @@ class Model(ModelT):
 
     @classmethod
     def make_final(cls) -> None:
-        pending, cls._pending_finalizers = cls._pending_finalizers, None
-        if pending:
-            for finalizer in pending:
-                finalizer()
+        pass
 
     @classmethod
     def _init_subclass(cls,
@@ -307,87 +299,7 @@ class Model(ModelT):
         # Can set serializer/namespace/etc. using:
         #    class X(Record, serializer='json', namespace='com.vandelay.X'):
         #        ...
-        try:
-            custom_options = cls.Options
-        except AttributeError:
-            custom_options = None
-        else:
-            delattr(cls, 'Options')
-        options = getattr(cls, '_options', None)
-        if options is None:
-            options = ModelOptions()
-            options.coercions = {}
-            options.defaults = {}
-        else:
-            options = options.clone_defaults()
-        if custom_options:
-            options.__dict__.update(custom_options.__dict__)
-        if coerce is not None:
-            options.coerce = coerce
-        if coercions is not None:
-            options.coercions.update(coercions)
-        if serializer is not None:
-            options.serializer = serializer
-        if include_metadata is not None:
-            options.include_metadata = include_metadata
-        if isodates is not None:
-            options.isodates = isodates
-        if decimals is not None:
-            options.decimals = decimals
-        if allow_blessed_key is not None:
-            options.allow_blessed_key = allow_blessed_key
-        if polymorphic_fields is not None:
-            options.polymorphic_fields = polymorphic_fields
-        if validation is not None:
-            options.validation = validation
-            options.coerce = True  # validation implies coerce
-        if date_parser is not None:
-            options.date_parser = date_parser
-
-        options.namespace = namespace or canoname(cls)
-
-        if abstract:
-            # Custom base classes can set this to skip class initialization.
-            cls.__is_abstract__ = True
-            cls._options = options
-            cls.__init__ = cls.__abstract_init__  # type: ignore
-            return
-        cls.__is_abstract__ = False
-
-        # Add introspection capabilities
-        cls._contribute_to_options(options)
-        # Add FieldDescriptors for every field.
-        options.descriptors = cls._contribute_field_descriptors(
-            cls, options)
-
-        # Store options on new subclass.
-        cls._options = options
-
-        cls._contribute_methods()
-
-        # Register in the global registry, so we can look up
-        # models by namespace.
-        registry[options.namespace] = cls
-
-        codegens = [
-            ('__init__', cls._BUILD_init, '_model_init'),
-            ('__hash__', cls._BUILD_hash, '_model_hash'),
-            ('__eq__', cls._BUILD_eq, '_model_eq'),
-            ('__ne__', cls._BUILD_ne, '_model_ne'),
-            ('__gt__', cls._BUILD_gt, '_model_gt'),
-            ('__ge__', cls._BUILD_ge, '_model_ge'),
-            ('__lt__', cls._BUILD_lt, '_model_lt'),
-            ('__le__', cls._BUILD_le, '_model_le'),
-        ]
-
-        for meth_name, meth_gen, attr_name in codegens:
-            # self._model_init = cls._BUILD_init()
-            # if '__init__' not in cls.__dict__:
-            #     cls.__init__ = self._model_init
-            meth = meth_gen()
-            setattr(cls, attr_name, meth)
-            if meth_name not in cls.__dict__:
-                setattr(cls, meth_name, meth)
+        pass
 
     def __abstract_init__(self) -> None:
         raise NotImplementedError(E_ABSTRACT_INSTANCE.format(
@@ -438,30 +350,24 @@ class Model(ModelT):
         ...
 
     def is_valid(self) -> bool:
-        return True if not self.validate() else False
+        pass
 
     def validate(self) -> List[ValidationError]:
-        errors = self.__validation_errors__
-        if errors is None:
-            errors = self.__validation_errors__ = list(self._itervalidate())
-        return errors
+        pass
 
     def validate_or_raise(self) -> None:
-        errors = self.validate()
-        if errors:
-            raise errors[0]
+        pass
 
     def _itervalidate(self) -> Iterable[ValidationError]:
-        for name, descr in self._options.descriptors.items():
-            yield from descr.validate_all(getattr(self, name))
+        pass
 
     @property
     def validation_errors(self) -> List[ValidationError]:
-        return self.validate()
+        pass
 
     def derive(self, *objects: ModelT, **fields: Any) -> ModelT:
         """Derive new model with certain fields changed."""
-        return self._derive(*objects, **fields)
+        pass
 
     @abc.abstractmethod  # pragma: no cover
     def _derive(self, *objects: ModelT, **fields: Any) -> ModelT:

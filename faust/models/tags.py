@@ -26,8 +26,7 @@ AllowedStack: LocalStack[bool] = LocalStack()
 
 @contextmanager
 def allow_protected_vars() -> Iterator:
-    with AllowedStack.push(True):
-        yield
+    pass
 
 
 class Tag(Generic[T]):
@@ -64,7 +63,7 @@ class Tag(Generic[T]):
 
     @property
     def _name(self) -> str:
-        return type(self).__name__
+        pass
 
 
 class OpaqueTag(Tag[T]):
@@ -82,7 +81,7 @@ class TransparentTag(Tag[T]):
         return str(self._prepare_value())
 
     def _prepare_value(self) -> T:
-        return self._value
+        pass
 
     def __format__(self, format_spec: str) -> str:
         return self._prepare_value().__format__(format_spec)
@@ -104,18 +103,7 @@ class _FrameLocal(UserString, Generic[T]):
         self._tag_type = tag_type
 
     def _access_value(self) -> T:
-        if AllowedStack.top:
-            return self._value
-        current_frame = self._frame_ident(
-            _getframe().f_back.f_back.f_back)
-        import traceback
-        traceback.print_stack()
-        if current_frame == self._frame:
-            return self._value
-        else:
-            raise SecurityError(
-                f'Protected {self._tag_type} value from '
-                f'field {self._field_name} accessed outside origin frame.')
+        pass
 
     def __repr__(self) -> str:
         val = self._value
@@ -131,7 +119,7 @@ class _FrameLocal(UserString, Generic[T]):
 
     @property
     def data(self) -> T:  # type: ignore
-        return self._access_value()
+        pass
 
 
 class Personal(OpaqueTag[T]):
@@ -161,7 +149,7 @@ class Secret(TransparentTag[T]):
     mask: str = '***********'
 
     def _prepare_value(self) -> T:
-        return cast(T, self.mask)
+        pass
 
 
 class Sensitive(OpaqueTag[T]):

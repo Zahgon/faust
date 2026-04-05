@@ -59,8 +59,7 @@ class CacheBackend(CacheBackendT, Service):
 
     async def set(self, key: str, value: bytes, timeout: float = None) -> None:
         """Set cached-value by key."""
-        async with self._recovery_context(key):
-            await self._set(key, value, timeout)
+        pass
 
     async def delete(self, key: str) -> None:
         """Forget value for cache key."""
@@ -89,4 +88,4 @@ class CacheBackend(CacheBackendT, Service):
             raise self.Unavailable()
 
     def _repr_info(self) -> str:
-        return f'url={self.url!r}'
+        pass

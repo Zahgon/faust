@@ -62,75 +62,47 @@ class StatsdMonitor(Monitor):
         super().__init__(**kwargs)
 
     def _new_statsd_client(self) -> StatsClient:
-        return statsd.StatsClient(
-            host=self.host, port=self.port, prefix=self.prefix)
+        pass
 
     def on_message_in(self, tp: TP, offset: int, message: Message) -> None:
         """Call before message is delegated to streams."""
-        super().on_message_in(tp, offset, message)
-
-        self.client.incr('messages_received', rate=self.rate)
-        self.client.incr('messages_active', rate=self.rate)
-        self.client.incr(f'topic.{tp.topic}.messages_received', rate=self.rate)
-        self.client.gauge(f'read_offset.{tp.topic}.{tp.partition}', offset)
+        pass
 
     def on_stream_event_in(self, tp: TP, offset: int, stream: StreamT,
                            event: EventT) -> Optional[Dict]:
         """Call when stream starts processing an event."""
-        state = super().on_stream_event_in(tp, offset, stream, event)
-        self.client.incr('events', rate=self.rate)
-        self.client.incr(
-            f'stream.{self._stream_label(stream)}.events',
-            rate=self.rate,
-        )
-        self.client.incr('events_active', rate=self.rate)
-        return state
+        pass
 
     def _stream_label(self, stream: StreamT) -> str:
-        return self._normalize(
-            stream.shortlabel.lstrip('Stream:'),
-        ).strip('_').lower()
+        pass
 
     def on_stream_event_out(self, tp: TP, offset: int, stream: StreamT,
                             event: EventT, state: Dict = None) -> None:
         """Call when stream is done processing an event."""
-        super().on_stream_event_out(tp, offset, stream, event, state)
-        self.client.decr('events_active', rate=self.rate)
-        self.client.timing(
-            'events_runtime',
-            self.secs_to_ms(self.events_runtime[-1]),
-            rate=self.rate)
+        pass
 
     def on_message_out(self,
                        tp: TP,
                        offset: int,
                        message: Message) -> None:
         """Call when message is fully acknowledged and can be committed."""
-        super().on_message_out(tp, offset, message)
-        self.client.decr('messages_active', rate=self.rate)
+        pass
 
     def on_table_get(self, table: CollectionT, key: Any) -> None:
         """Call when value in table is retrieved."""
-        super().on_table_get(table, key)
-        self.client.incr(f'table.{table.name}.keys_retrieved', rate=self.rate)
+        pass
 
     def on_table_set(self, table: CollectionT, key: Any, value: Any) -> None:
         """Call when new value for key in table is set."""
-        super().on_table_set(table, key, value)
-        self.client.incr(f'table.{table.name}.keys_updated', rate=self.rate)
+        pass
 
     def on_table_del(self, table: CollectionT, key: Any) -> None:
         """Call when key in a table is deleted."""
-        super().on_table_del(table, key)
-        self.client.incr(f'table.{table.name}.keys_deleted', rate=self.rate)
+        pass
 
     def on_commit_completed(self, consumer: ConsumerT, state: Any) -> None:
         """Call when consumer commit offset operation completed."""
-        super().on_commit_completed(consumer, state)
-        self.client.timing(
-            'commit_latency',
-            self.ms_since(cast(float, state)),
-            rate=self.rate)
+        pass
 
     def on_send_initiated(self, producer: ProducerT, topic: str,
                           message: PendingMessage,
@@ -157,41 +129,24 @@ class StatsdMonitor(Monitor):
                       exc: BaseException,
                       state: Any) -> None:
         """Call when producer was unable to publish message."""
-        super().on_send_error(producer, exc, state)
-        self.client.incr('messages_sent_error', rate=self.rate)
-        self.client.timing(
-            'send_latency_for_error',
-            self.ms_since(cast(float, state)),
-            rate=self.rate)
+        pass
 
     def on_assignment_error(self,
                             assignor: PartitionAssignorT,
                             state: Dict,
                             exc: BaseException) -> None:
         """Partition assignor did not complete assignor due to error."""
-        super().on_assignment_error(assignor, state, exc)
-        self.client.incr('assignments_error', rate=self.rate)
-        self.client.timing(
-            'assignment_latency',
-            self.ms_since(state['time_start']),
-            rate=self.rate)
+        pass
 
     def on_assignment_completed(self,
                                 assignor: PartitionAssignorT,
                                 state: Dict) -> None:
         """Partition assignor completed assignment."""
-        super().on_assignment_completed(assignor, state)
-        self.client.incr('assignments_complete', rate=self.rate)
-        self.client.timing(
-            'assignment_latency',
-            self.ms_since(state['time_start']),
-            rate=self.rate)
+        pass
 
     def on_rebalance_start(self, app: AppT) -> Dict:
         """Cluster rebalance in progress."""
-        state = super().on_rebalance_start(app)
-        self.client.incr('rebalances', rate=self.rate)
-        return state
+        pass
 
     def on_rebalance_return(self, app: AppT, state: Dict) -> None:
         """Consumer replied assignment is done to broker."""
@@ -205,12 +160,7 @@ class StatsdMonitor(Monitor):
 
     def on_rebalance_end(self, app: AppT, state: Dict) -> None:
         """Cluster rebalance fully completed (including recovery)."""
-        super().on_rebalance_end(app, state)
-        self.client.decr('rebalances_recovering', rate=self.rate)
-        self.client.timing(
-            'rebalance_end_latency',
-            self.ms_since(state['time_end']),
-            rate=self.rate)
+        pass
 
     def count(self, metric_name: str, count: int = 1) -> None:
         """Count metric by name."""
@@ -219,16 +169,11 @@ class StatsdMonitor(Monitor):
 
     def on_tp_commit(self, tp_offsets: TPOffsetMapping) -> None:
         """Call when offset in topic partition is committed."""
-        super().on_tp_commit(tp_offsets)
-        for tp, offset in tp_offsets.items():
-            metric_name = f'committed_offset.{tp.topic}.{tp.partition}'
-            self.client.gauge(metric_name, offset)
+        pass
 
     def track_tp_end_offset(self, tp: TP, offset: int) -> None:
         """Track new topic partition end offset for monitoring lags."""
-        super().track_tp_end_offset(tp, offset)
-        metric_name = f'end_offset.{tp.topic}.{tp.partition}'
-        self.client.gauge(metric_name, offset)
+        pass
 
     def on_web_request_end(self,
                            app: AppT,
@@ -238,15 +183,9 @@ class StatsdMonitor(Monitor):
                            *,
                            view: web.View = None) -> None:
         """Web server finished working on request."""
-        super().on_web_request_end(app, request, response, state, view=view)
-        status_code = int(state['status_code'])
-        self.client.incr(f'http_status_code.{status_code}', rate=self.rate)
-        self.client.timing(
-            'http_response_latency',
-            self.ms_since(state['time_end']),
-            rate=self.rate)
+        pass
 
     @cached_property
     def client(self) -> StatsClient:
         """Return statsd client."""
-        return self._new_statsd_client()
+        pass

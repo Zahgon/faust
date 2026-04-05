@@ -21,14 +21,8 @@ class completion(AppCommand):
 
     async def run(self) -> None:
         """Dump click completion script for Faust CLI."""
-        if click_completion is None:
-            raise self.UsageError(
-                'Missing required dependency, but this is easy to fix.\n'
-                'Run `pip install click_completion` from your virtualenv\n'
-                'and try again!')
-        self.say(click_completion.get_code(shell=self.shell()))
+        pass
 
     def shell(self) -> str:
         """Return the current shell used in this environment."""
-        shell_path = Path(os.environ.get('SHELL', 'auto'))
-        return shell_path.stem
+        pass

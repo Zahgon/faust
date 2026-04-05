@@ -226,43 +226,37 @@ class Settings(base.SettingsRegistry):
         but if path is relative it will be assumed to belong
         under the app directory.
         """
-        return path if path.is_absolute() else self.appdir / path
+        pass
 
     def data_directory_for_version(self, version: int) -> Path:
         """Return the directory path for data belonging to specific version."""
-        return self.datadir / f'v{version}'
+        pass
 
     def find_old_versiondirs(self) -> Iterable[Path]:
-        for version in reversed(range(0, self.version)):
-            path = self.data_directory_for_version(version)
-            if path.is_dir():
-                yield path
+        pass
 
     @property
     def name(self) -> str:
         # name is a read-only property
-        return self._name
+        pass
 
     @property
     def id(self) -> str:
-        return self._id
+        pass
 
     @id.setter
     def id(self, name: str) -> None:
-        self._name = name
-        self._id = self._prepare_id(name)  # id is name+version
+        pass
 
     def _prepare_id(self, id: str) -> str:
-        if self.version > 1:
-            return self.id_format.format(id=id, self=self)
-        return id
+        pass
 
     def __repr__(self) -> str:
         return f'<{type(self).__name__}: {self.id}>'
 
     @property
     def appdir(self) -> Path:
-        return self.data_directory_for_version(self.version)
+        pass
 
     # This is an example new setting having type ``str``
     @sections.Common.setting(
@@ -423,7 +417,7 @@ class Settings(base.SettingsRegistry):
     @datadir.on_get_value  # type: ignore
     def _prepare_datadir(self, path: Path) -> Path:
         # allow expanding variables in path
-        return Path(str(path).format(conf=self))
+        pass
 
     @sections.Common.setting(
         params.Path,
@@ -446,7 +440,7 @@ class Settings(base.SettingsRegistry):
 
     @tabledir.on_get_value  # type: ignore
     def _prepare_tabledir(self, path: Path) -> Path:
-        return self.relative_to_appdir(path)
+        pass
 
     @sections.Common.setting(
         params.Bool,
@@ -706,7 +700,7 @@ class Settings(base.SettingsRegistry):
 
     @broker.on_set_default  # type: ignore
     def _prepare_broker(self) -> BrokerArg:
-        return self._url or self.DEFAULT_BROKER_URL
+        pass
 
     @sections.Broker.setting(
         params.BrokerList,
@@ -1242,7 +1236,7 @@ class Settings(base.SettingsRegistry):
 
     @producer_linger.on_set_default  # type: ignore
     def _prepare_producer_linger(self) -> float:
-        return float(self._producer_linger_ms) / 1000.0
+        pass
 
     @sections.Producer.setting(
         params.UnsignedInt,
@@ -1371,7 +1365,7 @@ class Settings(base.SettingsRegistry):
 
     @reply_to.on_set_default  # type: ignore
     def _prepare_reply_to_default(self) -> str:
-        return f'{self.reply_to_prefix}{uuid4()}'
+        pass
 
     @sections.RPC.setting(
         params.Str,

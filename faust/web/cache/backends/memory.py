@@ -43,29 +43,23 @@ class CacheStorage(Generic[KT, VT]):
 
     def last_set_ttl(self, key: KT) -> Optional[float]:
         """Return the last set TTL for key, or :const:`None` if missing."""
-        return self._expires.get(key)
+        pass
 
     def expire(self, key: KT) -> None:
         """Expire value for key immediately."""
-        self.delete(key)
+        pass
 
     def set(self, key: KT, value: VT) -> None:
         """Set value for key."""
-        self._data[key] = value
+        pass
 
     def setex(self, key: KT, timeout: float, value: VT) -> None:
         """Set value & set timeout for key."""
-        self._expires[key] = timeout
-        self._time_index[key] = TIME_MONOTONIC()
-        self.set(key, value)
+        pass
 
     def ttl(self, key: KT) -> Optional[float]:
         """Return the remaining TTL for key."""
-        try:
-            return (
-                self._expires[key] - TIME_MONOTONIC() - self._time_index[key])
-        except KeyError:
-            return None
+        pass
 
     def delete(self, key: KT) -> None:
         """Delete value for key."""
@@ -92,10 +86,7 @@ class CacheBackend(base.CacheBackend):
 
     async def _set(self, key: str, value: bytes,
                    timeout: float = None) -> None:
-        if timeout is not None:
-            self.storage.setex(key, timeout, want_bytes(value))
-        else:
-            self.storage.set(key, want_bytes(value))
+        pass
 
     async def _delete(self, key: str) -> None:
         self.storage.delete(key)

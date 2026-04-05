@@ -64,13 +64,7 @@ class Section:
                 **kwargs: Any) -> Callable[[Callable], OT]:
         """Decorate to define new setting in this section."""
         def inner(fun: Callable) -> OT:
-            setting = param(
-                name=fun.__name__,
-                section=self,
-                help=fun.__doc__,
-                **kwargs,
-            )
-            return cast(OT, setting)
+            pass
         return inner
 
     def __repr__(self) -> str:

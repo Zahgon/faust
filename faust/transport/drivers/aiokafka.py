@@ -179,15 +179,7 @@ class ConsumerRebalanceListener(
     def on_partitions_revoked(
             self, revoked: Iterable[_TopicPartition]) -> Awaitable:
         """Call when partitions are being revoked."""
-        thread = self._thread
-        # XXX Must call app.on_rebalance_start as early as possible.
-        # we call this in the sync method, this way when we know
-        # that it will be called even if await never returns to the coroutine.
-        thread.app.on_rebalance_start()
-
-        # this way we should also get a warning if the coroutine
-        # is never awaited.
-        return thread.on_partitions_revoked(ensure_TPset(revoked))
+        pass
 
     async def on_partitions_assigned(
             self, assigned: Iterable[_TopicPartition]) -> None:
@@ -235,33 +227,14 @@ class Consumer(ThreadDelegateConsumer):
         )
 
     def _new_topicpartition(self, topic: str, partition: int) -> TP:
-        return cast(TP, _TopicPartition(topic, partition))
+        pass
 
     def _to_message(self, tp: TP, record: Any) -> ConsumerMessage:
-        timestamp: Optional[int] = record.timestamp
-        timestamp_s: float = cast(float, None)
-        if timestamp is not None:
-            timestamp_s = timestamp / 1000.0
-        return ConsumerMessage(
-            record.topic,
-            record.partition,
-            record.offset,
-            timestamp_s,
-            record.timestamp_type,
-            record.headers,
-            record.key,
-            record.value,
-            record.checksum,
-            record.serialized_key_size,
-            record.serialized_value_size,
-            tp,
-        )
+        pass
 
     async def on_stop(self) -> None:
         """Call when consumer is stopping."""
-        await super().on_stop()
-        transport = cast(Transport, self.transport)
-        transport._topic_waiters.clear()
+        pass
 
 
 class AIOKafkaConsumerThread(ConsumerThread):
@@ -296,190 +269,59 @@ class AIOKafkaConsumerThread(ConsumerThread):
 
     async def on_start(self) -> None:
         """Call when consumer starts."""
-        self._consumer = self._create_consumer(loop=self.thread_loop)
-        self.time_started = monotonic()
-        await self._consumer.start()
+        pass
 
     async def on_thread_stop(self) -> None:
         """Call when consumer thread is stopping."""
-        # super stops thread method queue (QueueServiceThread.method_queue)
-        await super().on_thread_stop()
-        # when method queue is stopped, we can stop the consumer
-        if self._consumer is not None:
-            await self._consumer.stop()
+        pass
 
     def _create_consumer(
             self,
             loop: asyncio.AbstractEventLoop) -> aiokafka.AIOKafkaConsumer:
-        transport = cast(Transport, self.transport)
-        if self.app.client_only:
-            return self._create_client_consumer(transport, loop=loop)
-        else:
-            return self._create_worker_consumer(transport, loop=loop)
+        pass
 
     def _create_worker_consumer(
             self,
             transport: 'Transport',
             loop: asyncio.AbstractEventLoop) -> aiokafka.AIOKafkaConsumer:
-        isolation_level: str = 'read_uncommitted'
-        conf = self.app.conf
-        if self.consumer.in_transaction:
-            isolation_level = 'read_committed'
-        self._assignor = self.app.assignor
-        auth_settings = credentials_to_aiokafka_auth(
-            conf.broker_credentials, conf.ssl_context)
-        max_poll_interval = conf.broker_max_poll_interval or 0
-
-        request_timeout = conf.broker_request_timeout
-        session_timeout = conf.broker_session_timeout
-        rebalance_timeout = conf.broker_rebalance_timeout
-
-        if session_timeout > request_timeout:
-            raise ImproperlyConfigured(
-                f'Setting broker_session_timeout={session_timeout} '
-                f'cannot be greater than '
-                f'broker_request_timeout={request_timeout}')
-
-        return aiokafka.AIOKafkaConsumer(
-            loop=loop,
-            api_version=conf.consumer_api_version,
-            client_id=conf.broker_client_id,
-            group_id=conf.id,
-            group_instance_id=conf.consumer_group_instance_id,
-            bootstrap_servers=server_list(
-                transport.url, transport.default_port),
-            partition_assignment_strategy=[self._assignor],
-            enable_auto_commit=False,
-            auto_offset_reset=conf.consumer_auto_offset_reset,
-            max_poll_records=conf.broker_max_poll_records,
-            max_poll_interval_ms=int(max_poll_interval * 1000.0),
-            max_partition_fetch_bytes=conf.consumer_max_fetch_size,
-            fetch_max_wait_ms=1500,
-            request_timeout_ms=int(request_timeout * 1000.0),
-            check_crcs=conf.broker_check_crcs,
-            session_timeout_ms=int(session_timeout * 1000.0),
-            rebalance_timeout_ms=int(rebalance_timeout * 1000.0),
-            heartbeat_interval_ms=int(conf.broker_heartbeat_interval * 1000.0),
-            isolation_level=isolation_level,
-            traced_from_parent_span=self.traced_from_parent_span,
-            start_rebalancing_span=self.start_rebalancing_span,
-            start_coordinator_span=self.start_coordinator_span,
-            on_generation_id_known=self.on_generation_id_known,
-            flush_spans=self.flush_spans,
-            **auth_settings,
-        )
+        pass
 
     def _create_client_consumer(
             self,
             transport: 'Transport',
             loop: asyncio.AbstractEventLoop) -> aiokafka.AIOKafkaConsumer:
-        conf = self.app.conf
-        auth_settings = credentials_to_aiokafka_auth(
-            conf.broker_credentials, conf.ssl_context)
-        max_poll_interval = conf.broker_max_poll_interval or 0
-        return aiokafka.AIOKafkaConsumer(
-            loop=loop,
-            client_id=conf.broker_client_id,
-            bootstrap_servers=server_list(
-                transport.url, transport.default_port),
-            request_timeout_ms=int(conf.broker_request_timeout * 1000.0),
-            enable_auto_commit=True,
-            max_poll_records=conf.broker_max_poll_records,
-            max_poll_interval_ms=int(max_poll_interval * 1000.0),
-            auto_offset_reset=conf.consumer_auto_offset_reset,
-            check_crcs=conf.broker_check_crcs,
-            **auth_settings,
-        )
+        pass
 
     @cached_property
     def trace_category(self) -> str:
-        return f'{self.app.conf.name}-_aiokafka'
+        pass
 
     def start_rebalancing_span(self) -> opentracing.Span:
-        return self._start_span('rebalancing', lazy=True)
+        pass
 
     def start_coordinator_span(self) -> opentracing.Span:
-        return self._start_span('coordinator')
+        pass
 
     def _start_span(self, name: str, *,
                     lazy: bool = False) -> opentracing.Span:
-        tracer = self.app.tracer
-        if tracer is not None:
-            span = tracer.get_tracer(self.trace_category).start_span(
-                operation_name=name,
-            )
-            span.set_tag(tags.SAMPLING_PRIORITY, 1)
-            self.app._span_add_default_tags(span)
-            set_current_span(span)
-            if lazy:
-                self._transform_span_lazy(span)
-            return span
-        else:
-            return noop_span()
+        pass
 
     @no_type_check
     def _transform_span_lazy(self, span: opentracing.Span) -> None:
         # XXX slow
-        consumer = self
-        if typing.TYPE_CHECKING:
-            # MyPy completely disallows the statements below
-            # claiming it is an illegal dynamic baseclass.
-            # We know mypy, but do it anyway :D
-            pass
-        else:
-            cls = span.__class__
-
-            class LazySpan(cls):
-
-                def finish() -> None:
-                    consumer._span_finish(span)
-
-            span._real_finish, span.finish = span.finish, LazySpan.finish
+        pass
 
     def _span_finish(self, span: opentracing.Span) -> None:
-        assert self._consumer is not None
-        if self._consumer._coordinator.generation == DEFAULT_GENERATION_ID:
-            self._on_span_generation_pending(span)
-        else:
-            self._on_span_generation_known(span)
+        pass
 
     def _on_span_generation_pending(self, span: opentracing.Span) -> None:
-        self._pending_rebalancing_spans.append(span)
+        pass
 
     def _on_span_generation_known(self, span: opentracing.Span) -> None:
-        if self._consumer:
-            coordinator = self._consumer._coordinator
-            coordinator_id = coordinator.coordinator_id
-            app_id = self.app.conf.id
-            generation = coordinator.generation
-            member_id = coordinator.member_id
-
-            try:
-                op_name = span.operation_name
-                set_tag = span.set_tag
-            except AttributeError:  # pragma: no cover
-                pass  # not a real span
-            else:
-                trace_id_str = f'reb-{app_id}-{generation}'
-                trace_id = murmur2(trace_id_str.encode())
-
-                span.context.trace_id = trace_id
-                if op_name.endswith('.REPLACE_WITH_MEMBER_ID'):
-                    span.set_operation_name(f'rebalancing node {member_id}')
-                set_tag('kafka_generation', generation)
-                set_tag('kafka_member_id', member_id)
-                set_tag('kafka_coordinator_id', coordinator_id)
-                self.app._span_add_default_tags(span)
-                span._real_finish()
+        pass
 
     def _on_span_cancelled_early(self, span: opentracing.Span) -> None:
-        try:
-            op_name = span.operation_name
-        except AttributeError:
-            return
-        else:
-            span.set_operation_name(f'{op_name} (CANCELLED)')
-            span._real_finish()
+        pass
 
     def traced_from_parent_span(self,
                                 parent_span: opentracing.Span,
@@ -491,234 +333,61 @@ class AIOKafkaConsumerThread(ConsumerThread):
             **extra_context)
 
     def flush_spans(self) -> None:
-        while self._pending_rebalancing_spans:
-            span = self._pending_rebalancing_spans.popleft()
-            self._on_span_cancelled_early(span)
+        pass
 
     def on_generation_id_known(self) -> None:
-        while self._pending_rebalancing_spans:
-            span = self._pending_rebalancing_spans.popleft()
-            self._on_span_generation_known(span)
+        pass
 
     def close(self) -> None:
         """Close consumer for graceful shutdown."""
-        if self._consumer is not None:
-            self._consumer.set_close()
-            self._consumer._coordinator.set_close()
+        pass
 
     async def subscribe(self, topics: Iterable[str]) -> None:
         """Reset subscription (requires rebalance)."""
-        # XXX pattern does not work :/
-        await self.call_thread(
-            self._ensure_consumer().subscribe,
-            topics=set(topics),
-            listener=self._rebalance_listener,
-        )
+        pass
 
     async def seek_to_committed(self) -> Mapping[TP, int]:
         """Seek partitions to the last committed offset."""
-        return await self.call_thread(
-            self._ensure_consumer().seek_to_committed)
+        pass
 
     async def commit(self, offsets: Mapping[TP, int]) -> bool:
         """Commit topic offsets."""
-        return await self.call_thread(self._commit, offsets)
+        pass
 
     async def _commit(self, offsets: Mapping[TP, int]) -> bool:
-        consumer = self._ensure_consumer()
-        now = monotonic()
-        try:
-            aiokafka_offsets = {
-                tp: OffsetAndMetadata(offset, '')
-                for tp, offset in offsets.items()
-            }
-            self.tp_last_committed_at.update({
-                tp: now
-                for tp in offsets
-            })
-            await consumer.commit(aiokafka_offsets)
-        except CommitFailedError as exc:
-            if 'already rebalanced' in str(exc):
-                return False
-            self.log.exception('Committing raised exception: %r', exc)
-            await self.crash(exc)
-            return False
-        except IllegalStateError as exc:
-            self.log.exception(
-                'Got exception: %r\nCurrent assignment: %r',
-                exc, self.assignment())
-            await self.crash(exc)
-            return False
-        return True
+        pass
 
     def verify_event_path(self, now: float, tp: TP) -> None:
         # long function ahead, but not difficult to test
         # as it always returns as soon as some condition is met.
-        if self._verify_aiokafka_event_path(now, tp):
-            # already logged error.
-            return None
-        parent = cast(Consumer, self.consumer)
-        app = parent.app
-        monitor = app.monitor
-        acks_enabled_for = app.topics.acks_enabled_for
-        secs_since_started = now - self.time_started
-
-        if monitor is not None:  # need for .stream_inbound_time
-            highwater = self.highwater(tp)
-            committed_offset = parent._committed_offset.get(tp)
-            has_acks = acks_enabled_for(tp.topic)
-            if highwater is None:
-                if secs_since_started >= self.tp_stream_timeout_secs:
-                    # AIOKAFKA HAS NOT UPDATED HIGHWATER SINCE STARTING
-                    self.log.error(
-                        SLOW_PROCESSING_NO_HIGHWATER_SINCE_START,
-                        tp, humanize_seconds_ago(secs_since_started),
-                    )
-                return None
-
-            if has_acks and committed_offset is not None:
-                if highwater > committed_offset:
-                    inbound = monitor.stream_inbound_time.get(tp)
-                    if inbound is None:
-                        if secs_since_started >= self.tp_stream_timeout_secs:
-                            # AIOKAFKA IS FETCHING BUT STREAM IS NOT
-                            # PROCESSING EVENTS (no events at all since
-                            # start).
-                            self._log_slow_processing_stream(
-                                SLOW_PROCESSING_STREAM_IDLE_SINCE_START,
-                                tp, humanize_seconds_ago(secs_since_started),
-                            )
-                        return None
-
-                    secs_since_stream = now - inbound
-                    if secs_since_stream >= self.tp_stream_timeout_secs:
-                        # AIOKAFKA IS FETCHING, AND STREAM WAS WORKING
-                        # BEFORE BUT NOW HAS STOPPED PROCESSING
-                        # (or processing of an event in the stream takes
-                        #  longer than tp_stream_timeout_secs).
-                        self._log_slow_processing_stream(
-                            SLOW_PROCESSING_STREAM_IDLE,
-                            tp, humanize_seconds_ago(secs_since_stream),
-                        )
-                        return None
-
-                    last_commit = self.tp_last_committed_at.get(tp)
-                    if last_commit is None:
-                        if secs_since_started >= self.tp_commit_timeout_secs:
-                            # AIOKAFKA IS FETCHING AND STREAM IS PROCESSING
-                            # BUT WE HAVE NOT COMMITTED ANYTHING SINCE WORKER
-                            # START.
-                            self._log_slow_processing_commit(
-                                SLOW_PROCESSING_NO_COMMIT_SINCE_START,
-                                tp, humanize_seconds_ago(secs_since_started),
-                            )
-                            return None
-                    else:
-                        secs_since_commit = now - last_commit
-                        if secs_since_commit >= self.tp_commit_timeout_secs:
-                            # AIOKAFKA IS FETCHING AND STREAM IS PROCESSING
-                            # BUT WE HAVE NOT COMITTED ANYTHING IN A WHILE
-                            # (commit offset is not advancing).
-                            self._log_slow_processing_commit(
-                                SLOW_PROCESSING_NO_RECENT_COMMIT,
-                                tp, humanize_seconds_ago(secs_since_commit),
-                            )
-                            return None
+        pass
 
     def verify_recovery_event_path(self, now: float, tp: TP) -> None:
-        self._verify_aiokafka_event_path(now, tp)
+        pass
 
     def _verify_aiokafka_event_path(self, now: float, tp: TP) -> bool:
         """Verify that :pypi:`aiokafka` event path is working.
 
         Returns :const:`True` if any error was logged.
         """
-        parent = cast(Consumer, self.consumer)
-        consumer = self._ensure_consumer()
-        secs_since_started = now - self.time_started
-        aiotp = parent._new_topicpartition(tp.topic, tp.partition)
-
-        request_at = consumer.records_last_request.get(aiotp)
-        if request_at is None:
-            if secs_since_started >= self.tp_fetch_request_timeout_secs:
-                # NO FETCH REQUEST SENT AT ALL SINCE WORKER START
-                self.log.error(
-                    SLOW_PROCESSING_NO_FETCH_SINCE_START,
-                    tp, humanize_seconds_ago(secs_since_started),
-                )
-            return True
-
-        response_at = consumer.records_last_response.get(aiotp)
-        if response_at is None:
-            if secs_since_started >= self.tp_fetch_response_timeout_secs:
-                # NO FETCH RESPONSE RECEIVED AT ALL SINCE WORKER START
-                self.log.error(
-                    SLOW_PROCESSING_NO_RESPONSE_SINCE_START,
-                    tp, humanize_seconds_ago(secs_since_started),
-                )
-            return True
-
-        secs_since_request = now - request_at
-        if secs_since_request >= self.tp_fetch_request_timeout_secs:
-            # NO REQUEST SENT BY AIOKAFKA IN THE LAST n SECONDS
-            self.log.error(
-                SLOW_PROCESSING_NO_RECENT_FETCH,
-                tp,
-                humanize_seconds_ago(secs_since_request),
-            )
-            return True
-
-        secs_since_response = now - response_at
-        if secs_since_response >= self.tp_fetch_response_timeout_secs:
-            # NO RESPONSE RECEIVED FROM KAKFA IN THE LAST n SECONDS
-            self.log.error(
-                SLOW_PROCESSING_NO_RECENT_RESPONSE,
-                tp,
-                humanize_seconds_ago(secs_since_response),
-            )
-            return True
-        return False
+        pass
 
     def _log_slow_processing_stream(self, msg: str, *args: Any) -> None:
-        app = self.consumer.app
-        self._log_slow_processing(
-            msg, *args,
-            causes=[
-                SLOW_PROCESSING_CAUSE_STREAM,
-                SLOW_PROCESSING_CAUSE_AGENT,
-            ],
-            setting='stream_processing_timeout',
-            current_value=app.conf.stream_processing_timeout,
-        )
+        pass
 
     def _log_slow_processing_commit(self, msg: str, *args: Any) -> None:
-        app = self.consumer.app
-        self._log_slow_processing(
-            msg, *args,
-            causes=[SLOW_PROCESSING_CAUSE_COMMIT],
-            setting='broker_commit_livelock_soft_timeout',
-            current_value=app.conf.broker_commit_livelock_soft_timeout,
-        )
+        pass
 
     def _make_slow_processing_error(self,
                                     msg: str,
                                     causes: Iterable[str]) -> str:
-        return ' '.join([
-            msg,
-            SLOW_PROCESSING_EXPLAINED,
-            text.enumeration(causes, start=2, sep='\n\n'),
-        ])
+        pass
 
     def _log_slow_processing(self, msg: str, *args: Any,
                              causes: Iterable[str],
                              setting: str,
                              current_value: float) -> None:
-        return self.log.error(
-            self._make_slow_processing_error(msg, causes),
-            *args,
-            setting=setting,
-            current_value=current_value,
-        )
+        pass
 
     async def position(self, tp: TP) -> Optional[int]:
         """Return the current position for topic partition."""
@@ -727,31 +396,20 @@ class AIOKafkaConsumerThread(ConsumerThread):
 
     async def seek_to_beginning(self, *partitions: _TopicPartition) -> None:
         """Seek list of offsets to the first available offset."""
-        await self.call_thread(
-            self._ensure_consumer().seek_to_beginning, *partitions)
+        pass
 
     async def seek_wait(self, partitions: Mapping[TP, int]) -> None:
         """Seek partitions to specific offset and wait for operation."""
-        consumer = self._ensure_consumer()
-        await self.call_thread(self._seek_wait, consumer, partitions)
+        pass
 
     async def _seek_wait(self,
                          consumer: Consumer,
                          partitions: Mapping[TP, int]) -> None:
-        for tp, offset in partitions.items():
-            self.log.dev('SEEK %r -> %r', tp, offset)
-            consumer.seek(tp, offset)
-            if offset > 0:
-                self.consumer._read_offset[tp] = offset
-            elif tp in self.consumer._read_offset.keys():
-                del self.consumer._read_offset[tp]
-        await asyncio.gather(*[
-            consumer.position(tp) for tp in partitions
-        ])
+        pass
 
     def seek(self, partition: TP, offset: int) -> None:
         """Seek partition to specific offset."""
-        self._ensure_consumer().seek(partition, offset)
+        pass
 
     def assignment(self) -> Set[TP]:
         """Return the current assignment."""
@@ -766,19 +424,16 @@ class AIOKafkaConsumerThread(ConsumerThread):
 
     def topic_partitions(self, topic: str) -> Optional[int]:
         """Return the number of partitions configured for topic by name."""
-        if self._consumer is not None:
-            return self._consumer._coordinator._metadata_snapshot.get(topic)
-        return None
+        pass
 
     async def earliest_offsets(self,
                                *partitions: TP) -> Mapping[TP, int]:
         """Return the earliest offsets for a list of partitions."""
-        return await self.call_thread(
-            self._ensure_consumer().beginning_offsets, partitions)
+        pass
 
     async def highwaters(self, *partitions: TP) -> Mapping[TP, int]:
         """Return the last offsets for a list of partitions."""
-        return await self.call_thread(self._highwaters, partitions)
+        pass
 
     async def _highwaters(self, partitions: List[TP]) -> Mapping[TP, int]:
         consumer = self._ensure_consumer()
@@ -800,36 +455,14 @@ class AIOKafkaConsumerThread(ConsumerThread):
                       active_partitions: Optional[Set[TP]],
                       timeout: float) -> RecordMap:
         """Fetch batch of messages from server."""
-        # Implementation for the Fetcher service.
-        _consumer = self._ensure_consumer()
-        # NOTE: Since we are enqueing the fetch request,
-        # we need to check when dequeued that we are not in a rebalancing
-        # state at that point to return early, or we
-        # will create a deadlock (fetch request starts after flow stopped)
-        return await self.call_thread(
-            self._fetch_records,
-            _consumer,
-            active_partitions,
-            timeout=timeout,
-            max_records=_consumer._max_poll_records,
-        )
+        pass
 
     async def _fetch_records(self,
                              consumer: aiokafka.AIOKafkaConsumer,
                              active_partitions: Set[TP],
                              timeout: float = None,
                              max_records: int = None) -> RecordMap:
-        if not self.consumer.flow_active:
-            return {}
-        fetcher = consumer._fetcher
-        if consumer._closed or fetcher._closed:
-            raise ConsumerStoppedError()
-        with fetcher._subscriptions.fetch_context():
-            return await fetcher.fetched_records(
-                active_partitions,
-                timeout=timeout,
-                max_records=max_records,
-            )
+        pass
 
     async def create_topic(self,
                            topic: str,
@@ -927,23 +560,23 @@ class Producer(base.Producer):
 
     async def begin_transaction(self, transactional_id: str) -> None:
         """Begin transaction by id."""
-        await self._ensure_producer().begin_transaction(transactional_id)
+        pass
 
     async def commit_transaction(self, transactional_id: str) -> None:
         """Commit transaction by id."""
-        await self._ensure_producer().commit_transaction(transactional_id)
+        pass
 
     async def abort_transaction(self, transactional_id: str) -> None:
         """Abort and rollback transaction by id."""
-        await self._ensure_producer().abort_transaction(transactional_id)
+        pass
 
     async def stop_transaction(self, transactional_id: str) -> None:
         """Stop transaction by id."""
-        await self._ensure_producer().stop_transaction(transactional_id)
+        pass
 
     async def maybe_begin_transaction(self, transactional_id: str) -> None:
         """Begin transaction (if one does not already exist)."""
-        await self._ensure_producer().maybe_begin_transaction(transactional_id)
+        pass
 
     async def commit_transactions(
             self,
@@ -951,10 +584,7 @@ class Producer(base.Producer):
             group_id: str,
             start_new_transaction: bool = True) -> None:
         """Commit transactions."""
-        await self._ensure_producer().commit(
-            tid_to_offset_map, group_id,
-            start_new_transaction=start_new_transaction,
-        )
+        pass
 
     def _settings_extra(self) -> Mapping[str, Any]:
         if self.app.in_transaction:
@@ -976,11 +606,7 @@ class Producer(base.Producer):
         return aiokafka.AIOKafkaProducer
 
     async def _on_irrecoverable_error(self, exc: BaseException) -> None:
-        consumer = self.transport.app.consumer
-        if consumer is not None:  # pragma: no cover
-            # coverage executes this line, but does not mark as covered.
-            await consumer.crash(exc)
-        await self.crash(exc)
+        pass
 
     async def create_topic(self,
                            topic: str,
@@ -1019,18 +645,11 @@ class Producer(base.Producer):
 
     async def on_start(self) -> None:
         """Call when producer starts."""
-        await super().on_start()
-        producer = self._producer = self._new_producer()
-        self.beacon.add(producer)
-        await producer.start()
+        pass
 
     async def on_stop(self) -> None:
         """Call when producer stops."""
-        await super().on_stop()
-        cast(Transport, self.transport)._topic_waiters.clear()
-        producer, self._producer = self._producer, None
-        if producer is not None:
-            await producer.stop()
+        pass
 
     async def send(self, topic: str, key: Optional[bytes],
                    value: Optional[bytes],
@@ -1105,11 +724,7 @@ class Producer(base.Producer):
 
     def supports_headers(self) -> bool:
         """Return :const:`True` if message headers are supported."""
-        producer = self._ensure_producer()
-        client = producer.client
-        if client is None:
-            raise NotReady('Producer client not yet connected')
-        return client.api_version >= (0, 11)
+        pass
 
 
 class Transport(base.Transport):
@@ -1133,17 +748,7 @@ class Transport(base.Transport):
                       retention: int = None,
                       compacting: bool = None,
                       deleting: bool = None) -> MutableMapping[str, Any]:
-        config: MutableMapping[str, Any] = {}
-        cleanup_flags: Set[str] = set()
-        if compacting:
-            cleanup_flags |= {'compact'}
-        if deleting:
-            cleanup_flags |= {'delete'}
-        if cleanup_flags:
-            config['cleanup.policy'] = ','.join(sorted(cleanup_flags))
-        if retention:
-            config['retention.ms'] = retention
-        return config
+        pass
 
     async def _create_topic(self,
                             owner: Service,
@@ -1175,21 +780,7 @@ class Transport(base.Transport):
             owner: Service,
             client: aiokafka.AIOKafkaClient,
             timeout: int = 30000) -> Optional[int]:  # pragma: no cover
-        nodes = [broker.nodeId for broker in client.cluster.brokers()]
-        for node_id in nodes:
-            if node_id is None:
-                raise NotReady('Not connected to Kafka Broker')
-            request = MetadataRequest_v1([])
-            wait_result = await owner.wait(
-                client.send(node_id, request),
-                timeout=timeout,
-            )
-            if wait_result.stopped:
-                owner.log.info('Shutting down - skipping creation.')
-                return None
-            response = wait_result.result
-            return response.controller_id
-        raise Exception('Controller node not found')
+        pass
 
     async def _really_create_topic(
             self,
@@ -1205,59 +796,7 @@ class Transport(base.Transport):
             compacting: bool = None,
             deleting: bool = None,
             ensure_created: bool = False) -> None:  # pragma: no cover
-        owner.log.info('Creating topic %r', topic)
-
-        if topic in client.cluster.topics():
-            owner.log.debug('Topic %r exists, skipping creation.', topic)
-            return
-
-        protocol_version = 1
-        extra_configs = config or {}
-        config = self._topic_config(retention, compacting, deleting)
-        config.update(extra_configs)
-
-        controller_node = await self._get_controller_node(owner, client,
-                                                          timeout=timeout)
-        owner.log.debug('Found controller: %r', controller_node)
-
-        if controller_node is None:
-            if owner.should_stop:
-                owner.log.info('Shutting down hence controller not found')
-                return
-            else:
-                raise Exception('Controller node is None')
-
-        request = CreateTopicsRequest[protocol_version](
-            [(topic, partitions, replication, [], list(config.items()))],
-            timeout,
-            False,
-        )
-        wait_result = await owner.wait(
-            client.send(controller_node, request),
-            timeout=timeout,
-        )
-        if wait_result.stopped:
-            owner.log.debug('Shutting down - skipping creation.')
-            return
-        response = wait_result.result
-
-        assert len(response.topic_error_codes), 'single topic'
-
-        _, code, reason = response.topic_error_codes[0]
-
-        if code != 0:
-            if not ensure_created and code == TopicExistsError.errno:
-                owner.log.debug(
-                    'Topic %r exists, skipping creation.', topic)
-                return
-            elif code == NotControllerError.errno:
-                raise RuntimeError(f'Invalid controller: {controller_node}')
-            else:
-                raise for_code(code)(
-                    f'Cannot create topic: {topic} ({code}): {reason}')
-        else:
-            owner.log.info('Topic %r created.', topic)
-            return
+        pass
 
 
 def credentials_to_aiokafka_auth(credentials: CredentialsT = None,

@@ -51,15 +51,14 @@ class BaseSignal(Generic[VT]):
 
     async def resolve(self, key: Any, event: SignalEvent) -> None:
         """Resolve signal with value."""
-        self._set_current_value(key, event)
-        self._wakeup_resolvers()
+        pass
 
     def __set_name__(self, owner: Type, name: str) -> None:
         if not self.name:
             self.name = name
 
     def _wakeup_resolvers(self) -> None:
-        self.case.app._can_resolve.set()
+        pass
 
     async def _wait_for_resolved(self, *, timeout: float = None) -> None:
         app = self.case.app
@@ -73,7 +72,7 @@ class BaseSignal(Generic[VT]):
         return self.name, self.case.name, key
 
     def _set_current_value(self, key: Any, event: SignalEvent) -> None:
-        self.case.app._resolved_signals[self._index_key(key)] = event
+        pass
 
     def clone(self, **kwargs: Any) -> 'BaseSignal':
         """Clone this signal using keyword arguments."""

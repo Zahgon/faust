@@ -58,10 +58,7 @@ class SettingsRegistry(abc.ABC):
     @classmethod
     def setting_names(cls) -> Set[str]:
         """Return set of all active setting names."""
-        return {
-            name for name, setting in cls.SETTINGS.items()
-            if setting.active and not setting.deprecated
-        }
+        pass
 
     @classmethod
     def _init_subclass_settings(cls) -> None:
@@ -89,7 +86,7 @@ class SettingsRegistry(abc.ABC):
         # replace Settings.__init__ with a new init method
         # that puts the arguments into kwargs :-)
         def _new_init(self: _Settings, *args: Any, **kwargs: Any) -> None:
-            self._init_entrypoint(*args, **kwargs)
+            pass
         cls.__init__ = _new_init  # type: ignore
 
         # For every setting there will be an accessor property
@@ -104,8 +101,7 @@ class SettingsRegistry(abc.ABC):
 
     @classmethod
     def _warn_already_configured(cls) -> None:
-        warnings.warn(AlreadyConfiguredWarning(W_ALREADY_CONFIGURED),
-                      stacklevel=3)
+        pass
 
     @classmethod
     def _warn_already_configured_key(cls,

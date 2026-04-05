@@ -90,7 +90,7 @@ class Fixup(base.Fixup):
     @cached_property
     def apps(self) -> _Apps:
         """Return the Django app registry."""
-        return symbol_by_name('django.apps:apps')
+        pass
 
     @cached_property
     def settings(self) -> _Settings:

@@ -128,19 +128,7 @@ class Channel(ChannelT[T]):
     @property
     def queue(self) -> ThrowableQueue:
         """Return the underlying queue/buffer backing this channel."""
-        if self._queue is None:
-            # this should only be set after clone = channel.__aiter__()
-            # which means the loop is not accessed by merely defining
-            # a channel at module scope.
-            maxsize = self.maxsize
-            if maxsize is None:
-                maxsize = self.app.conf.stream_buffer_maxsize
-            self._queue = self.app.FlowControlQueue(
-                maxsize=maxsize,
-                loop=self.loop,
-                clear_on_resume=True,
-            )
-        return self._queue
+        pass
 
     def clone(self, *, is_iterator: bool = None, **kwargs: Any) -> ChannelT[T]:
         """Create clone of this channel.
@@ -165,7 +153,7 @@ class Channel(ChannelT[T]):
 
     def clone_using_queue(self, queue: asyncio.Queue) -> ChannelT[T]:
         """Create clone of this channel using specific queue instance."""
-        return self.clone(queue=queue, is_iterator=True)
+        pass
 
     def _clone(self, **kwargs: Any) -> ChannelT[T]:
         return type(self)(**{**self._clone_args(), **kwargs})
@@ -431,7 +419,7 @@ class Channel(ChannelT[T]):
 
     def empty(self) -> bool:
         """Return :const:`True` if the queue is empty."""
-        return self.queue.empty()
+        pass
 
     async def on_key_decode_error(self, exc: Exception,
                                   message: Message) -> None:
@@ -491,7 +479,7 @@ class Channel(ChannelT[T]):
 
         For local channels this will simply return the same channel.
         """
-        return self
+        pass
 
     def __aiter__(self) -> ChannelT[T]:
         return self if self.is_iterator else self.clone(is_iterator=True)
@@ -535,7 +523,7 @@ class Channel(ChannelT[T]):
 
     def _object_id_as_hex(self) -> str:
         # hexadecimal version of id(self)
-        return f'{id(self):#x}'
+        pass
 
     def __str__(self) -> str:
         # subclasses should override this
@@ -544,7 +532,7 @@ class Channel(ChannelT[T]):
     @property
     def subscriber_count(self) -> int:
         """Return number of active subscribers to local channel."""
-        return len(self._subscribers)
+        pass
 
     @property
     def label(self) -> str:

@@ -134,62 +134,11 @@ class Record(Model, abstract=True):  # type: ignore
         # This only happens once when the class is created, so Faust
         # models are fast at runtime.
 
-        fields, defaults = annotations(
-            cls,
-            stop=Record,
-            skip_classvar=True,
-            alias_types=ALIAS_FIELD_TYPES,
-            localns={cls.__name__: cls},
-        )
-        options.fields = cast(Mapping, fields)
-        options.fieldset = frozenset(fields)
-        options.fieldpos = {i: k for i, k in enumerate(fields.keys())}
-
-        # extract all default values, but only for actual fields.
-        options.defaults = {
-            k: v.default if isinstance(v, FieldDescriptor) else v
-            for k, v in defaults.items()
-            if k in fields and not (
-                isinstance(v, FieldDescriptor) and v.required)
-        }
-
-        # Raise error if non-defaults are mixed in with defaults
-        # like namedtuple/dataclasses do.
-        local_defaults = []
-        for attr_name in cls.__annotations__:
-            if attr_name in cls.__dict__:
-                default_value = cls.__dict__[attr_name]
-                if isinstance(default_value, FieldDescriptorT):
-                    if not default_value.required:
-                        local_defaults.append(attr_name)
-                else:
-                    local_defaults.append(attr_name)
-            else:
-                if local_defaults:
-                    raise TypeError(E_NON_DEFAULT_FOLLOWS_DEFAULT.format(
-                        cls_name=cls.__name__,
-                        field_name=attr_name,
-                        fields=pluralize(len(local_defaults), 'field'),
-                        default_names=', '.join(local_defaults),
-                    ))
-
-        for field, typ in fields.items():
-            if is_optional(typ):
-                # Optional[X] also needs to be added to defaults mapping.
-                options.defaults.setdefault(field, None)
-
-        # Create frozenset index of default fields.
-        options.optionalset = frozenset(options.defaults)
+        pass
 
     @classmethod
     def _contribute_methods(cls) -> None:
-        if not getattr(cls.asdict, 'faust_generated', False):
-            raise RuntimeError('Not allowed to override Record.asdict()')
-        cls.asdict = cls._BUILD_asdict()  # type: ignore
-        cls.asdict.faust_generated = True  # type: ignore
-
-        cls._input_translate_fields = \
-            cls._BUILD_input_translate_fields()
+        pass
 
     @classmethod
     def _contribute_field_descriptors(
@@ -314,19 +263,7 @@ class Record(Model, abstract=True):  # type: ignore
 
     @classmethod
     def _BUILD_input_translate_fields(cls) -> Callable[[MutableMapping], None]:
-        translate = [
-            f'data[{field!r}] = data.pop({d.input_name!r}, None)'
-            for field, d in cls._options.descriptors.items()
-            if d.field != d.input_name
-        ]
-
-        return cast(Callable, classmethod(codegen.Function(
-            '_input_translate_fields',
-            ['cls', 'data'],
-            translate if translate else ['pass'],
-            globals=globals(),
-            locals=locals(),
-        )))
+        pass
 
     @classmethod
     def _BUILD_init(cls) -> Callable[[], None]:
@@ -368,207 +305,49 @@ class Record(Model, abstract=True):  # type: ignore
         #         self.__post_init__()
         #     return __init__
         #
-        options = cls._options
-        field_positions = options.fieldpos
-        optional = options.optionalset
-        needs_validation = options.validation
-        descriptors = options.descriptors
-        has_post_init = hasattr(cls, '__post_init__')
-
-        closures: Dict[str, str] = {
-            '__defaults__': 'Model._options.defaults',
-            '__descr__': 'Model._options.descriptors',
-        }
-
-        kwonlyargs = ['*', '__strict__=True', '__faust=None', '**kwargs']
-        # these are sets, but we care about order as we will
-        # be generating signature arguments in the correct order.
-        #
-        # The order is decided by the order of fields in the class):
-        #
-        #  class Foo(Record):
-        #      c: int
-        #      a: int
-        #
-        # becomes:
-        #
-        #   def __init__(self, c, a):
-        #       self.c = c
-        #       self.a = a
-        optional_fields: Dict[str, bool] = OrderedDict()
-        required_fields: Dict[str, bool] = OrderedDict()
-
-        def generate_setter(field: str, getval: str) -> str:
-            """Generate code that sets attribute for field in class.
-
-            Arguments:
-                field: Name of field.
-                getval: Source code that initializes value for field,
-                    can be the field name itself for no initialization
-                    or for example: ``f"self._prepare_value({field})"``.
-                out: Destination list where new source code lines are added.
-                """
-            if field in optional:
-                optional_fields[field] = True
-                default_var = f'_default_{field}_'
-                closures[default_var] = f'__defaults__["{field}"]'
-                return (f'    self.{field} = {getval} '
-                        f'if {field} is not None else {default_var}')
-            else:
-                required_fields[field] = True
-                return f'    self.{field} = {getval}'
-
-        def generate_prepare_value(field: str) -> str:
-            descriptor = descriptors[field]
-            if descriptor.lazy_coercion:
-                return field  # no initialization
-            else:
-                # call descriptor.to_python
-                init_field_var = f'_init_{field}_'
-                closures[init_field_var] = f'__descr__["{field}"].to_python'
-                return f'{init_field_var}({field})'
-
-        preamble = [
-            'self.__evaluated_fields__ = set()',
-        ]
-
-        data_setters = ['if __strict__:'] + [
-            generate_setter(field, field)
-            for field in field_positions.values()
-        ]
-
-        data_rest = [
-            '    if kwargs:',
-            '        from mode.utils.text import pluralize',
-            '        message = "{} got unexpected {}: {}".format(',
-            '            self.__class__.__name__,',
-            '            pluralize(kwargs.__len__(), "argument"),',
-            '            ", ".join(map(str, sorted(kwargs))))',
-            '        raise TypeError(message)',
-        ]
-
-        init_setters = ['else:']
-        if field_positions:
-            init_setters.extend(
-                generate_setter(field, generate_prepare_value(field))
-                for field in field_positions.values()
-            )
-        init_setters.append('    self.__dict__.update(kwargs)')
-
-        postamble = []
-        if has_post_init:
-            postamble.append('self.__post_init__()')
-        if needs_validation:
-            postamble.append('self.validate_or_raise()')
-
-        signature = list(chain(
-            ['self'],
-            [f'{field}' for field in required_fields],
-            [f'{field}=None' for field in optional_fields],
-            kwonlyargs,
-        ))
-
-        sourcecode = codegen.build_closure_source(
-            name='__init__',
-            args=signature,
-            body=list(chain(
-                preamble,
-                data_setters,
-                data_rest,
-                init_setters,
-                postamble,
-            )),
-            closures=closures,
-            outer_args=['Model'],
-        )
-
-        # TIP final sourcecode also available
-        # as .__sourcecode__ on returned method
-        # (print(Model.__init__.__sourcecode__)
-        return codegen.build_closure(
-            '__outer__', sourcecode, cls,
-            globals={},
-            locals={},
-        )
+        pass
 
     @classmethod
     def _BUILD_hash(cls) -> Callable[[], None]:
-        return codegen.HashMethod(list(cls._options.fields),
-                                  globals=globals(),
-                                  locals=locals())
+        pass
 
     @classmethod
     def _BUILD_eq(cls) -> Callable[[], None]:
-        return codegen.EqMethod(list(cls._options.fields),
-                                globals=globals(),
-                                locals=locals())
+        pass
 
     @classmethod
     def _BUILD_ne(cls) -> Callable[[], None]:
-        return codegen.NeMethod(list(cls._options.fields),
-                                globals=globals(),
-                                locals=locals())
+        pass
 
     @classmethod
     def _BUILD_gt(cls) -> Callable[[], None]:
-        return codegen.GtMethod(list(cls._options.fields),
-                                globals=globals(),
-                                locals=locals())
+        pass
 
     @classmethod
     def _BUILD_ge(cls) -> Callable[[], None]:
-        return codegen.GeMethod(list(cls._options.fields),
-                                globals=globals(),
-                                locals=locals())
+        pass
 
     @classmethod
     def _BUILD_lt(cls) -> Callable[[], None]:
-        return codegen.LtMethod(list(cls._options.fields),
-                                globals=globals(),
-                                locals=locals())
+        pass
 
     @classmethod
     def _BUILD_le(cls) -> Callable[[], None]:
-        return codegen.LeMethod(list(cls._options.fields),
-                                globals=globals(),
-                                locals=locals())
+        pass
 
     @classmethod
     def _BUILD_asdict(cls) -> Callable[..., Dict[str, Any]]:
-        preamble = [
-            'return self._prepare_dict({',
-        ]
-
-        fields = [
-            f'  {d.output_name!r}: {cls._BUILD_asdict_field(name, d)},'
-            for name, d in cls._options.descriptors.items()
-            if not d.exclude
-        ]
-
-        postamble = [
-            '})',
-        ]
-
-        return codegen.Method(
-            '_asdict',
-            [],
-            preamble + fields + postamble,
-            globals=globals(),
-            locals=locals(),
-        )
+        pass
 
     def _prepare_dict(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        return payload
+        pass
 
     @classmethod
     def _BUILD_asdict_field(cls, name: str, field: FieldDescriptorT) -> str:
-        return f'self.{name}'
+        pass
 
     def _derive(self, *objects: ModelT, **fields: Any) -> ModelT:
-        data = self.asdict()
-        for obj in objects:
-            data.update(cast(Record, obj).asdict())
-        return type(self)(**{**data, **fields})
+        pass
 
     def to_representation(self) -> Mapping[str, Any]:
         """Convert model to its Python generic counterpart.
@@ -591,13 +370,7 @@ class Record(Model, abstract=True):  # type: ignore
     def _humanize(self) -> str:
         # we try to preserve the order of fields specified in the class,
         # so doing {**self._options.defaults, **self.__dict__} does not work.
-        attrs, defaults = self.__dict__, self._options.defaults.items()
-        fields = {
-            **{k: v for k, v in attrs.items() if not k.startswith('__')},
-            **{k: v
-               for k, v in defaults if k not in attrs},
-        }
-        return _kvrepr(fields)
+        pass
 
     def __json__(self) -> Any:
         return self.to_representation()
@@ -629,4 +402,4 @@ class Record(Model, abstract=True):  # type: ignore
 
 def _kvrepr(d: Mapping[str, Any], *, sep: str = ', ') -> str:
     """Represent dict as `k='v'` pairs separated by comma."""
-    return sep.join(f'{k}={v!r}' for k, v in d.items())
+    pass

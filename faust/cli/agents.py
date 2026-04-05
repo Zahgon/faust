@@ -19,44 +19,24 @@ class agents(AppCommand):
 
     async def run(self, local: bool) -> None:
         """Dump list of available agents in this application."""
-        self.say(
-            self.tabulate(
-                [
-                    self.agent_to_row(agent)
-                    for agent in self.agents(local=local)
-                ],
-                headers=self.headers,
-                title=self.title,
-            ))
+        pass
 
     def agents(self, *, local: bool = False) -> Sequence[AgentT]:
         """Convert list of agents to terminal table rows."""
-        sortkey = cast(Callable[[Type[AgentT]], Any], self.sortkey)
-        return [
-            agent
-            for agent in sorted(self.app.agents.values(), key=sortkey)
-            if self._maybe_topic(agent) or local
-        ]
+        pass
 
     def agent_to_row(self, agent: AgentT) -> Sequence[str]:
         """Convert agent fields to terminal table row."""
-        return [
-            self.bold_tail(self._name(agent)),
-            self._topic(agent),
-            self.dark(self._help(agent)),
-        ]
+        pass
 
     def _name(self, agent: AgentT) -> str:
-        return '@' + self.abbreviate_fqdn(agent.name)
+        pass
 
     def _maybe_topic(self, agent: AgentT) -> Optional[str]:
-        try:
-            return agent.channel.get_topic_name()
-        except NotImplementedError:
-            return None
+        pass
 
     def _topic(self, agent: AgentT) -> str:
-        return self._maybe_topic(agent) or '<LOCAL>'
+        pass
 
     def _help(self, agent: AgentT) -> str:
-        return agent.help or '<N/A>'
+        pass

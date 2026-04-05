@@ -45,8 +45,7 @@ class _PyHoppingWindow(Window):
         ]
 
     def stale(self, timestamp: float, latest_timestamp: float) -> bool:
-        return (timestamp <= self._stale_before(latest_timestamp, self.expires)
-                if self.expires else False)
+        pass
 
     def current(self, timestamp: float) -> WindowRange:
         """Get the latest window range for a given timestamp."""
@@ -56,7 +55,7 @@ class _PyHoppingWindow(Window):
         return WindowRange_from_start(start + (step * m), self.size)
 
     def delta(self, timestamp: float, d: Seconds) -> WindowRange:
-        return self.current(timestamp - want_seconds(d))
+        pass
 
     def earliest(self, timestamp: float) -> WindowRange:
         start = self._start_initial_range(timestamp)
@@ -67,7 +66,7 @@ class _PyHoppingWindow(Window):
         return closest_step - self.size + self.step
 
     def _stale_before(self, latest_timestamp: float, expires: float) -> float:
-        return self.current(latest_timestamp - expires)[0]
+        pass
 
 
 if typing.TYPE_CHECKING:
@@ -132,18 +131,17 @@ class _PySlidingWindow(Window):
         ]
 
     def stale(self, timestamp: float, latest_timestamp: float) -> bool:
-        return (timestamp <= self._stale_before(self.expires, latest_timestamp)
-                if self.expires else False)
+        pass
 
     def _stale_before(self, expires: float, latest_timestamp: float) -> float:
-        return latest_timestamp - expires
+        pass
 
     def current(self, timestamp: float) -> WindowRange:
         """Get the latest window range for a given timestamp."""
         return timestamp - self.before, timestamp + self.after
 
     def delta(self, timestamp: float, d: Seconds) -> WindowRange:
-        return self.current(timestamp - want_seconds(d))
+        pass
 
     def earliest(self, timestamp: float) -> WindowRange:
         return self.current(timestamp)

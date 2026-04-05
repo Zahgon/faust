@@ -25,9 +25,9 @@ current_execution_stack = LocalStack()
 
 def current_execution() -> Optional[_TestRunner]:
     """Return the current :class:`~faust.livecheck.TestRunner`."""
-    return current_execution_stack.top
+    pass
 
 
 def current_test() -> Optional[TestExecution]:
     """Return information about the current test (if any)."""
-    return current_test_stack.top
+    pass

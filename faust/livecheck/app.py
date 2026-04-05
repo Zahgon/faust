@@ -51,11 +51,7 @@ class LiveCheckSensor(Sensor):
                            stream: StreamT,
                            event: EventT) -> Optional[Dict]:
         """Call when stream starts processing event."""
-        test = TestExecution.from_headers(event.headers)
-        if test is not None:
-            stream.current_test = test  # type: ignore
-            current_test_stack.push_without_automatic_cleanup(test)
-        return None
+        pass
 
     def on_stream_event_out(self,
                             tp: TP,
@@ -64,10 +60,7 @@ class LiveCheckSensor(Sensor):
                             event: EventT,
                             state: Dict = None) -> None:
         """Call when stream is finished handling event."""
-        has_active_test = getattr(stream, 'current_test', None)
-        if has_active_test:
-            stream.current_test = None  # type: ignore
-            current_test_stack.pop()
+        pass
 
 
 class LiveCheck(faust.App):
@@ -173,11 +166,11 @@ class LiveCheck(faust.App):
     @property
     def current_test(self) -> Optional[TestExecution]:
         """Return the current test context (if any)."""
-        return current_test()
+        pass
 
     @cached_property
     def _can_resolve(self) -> asyncio.Event:
-        return asyncio.Event()
+        pass
 
     def _apply_monkeypatches(self) -> None:
         patches.patch_all()
@@ -197,13 +190,7 @@ class LiveCheck(faust.App):
             signal: BaseSignalT = None,
             **kwargs: Any) -> None:
         """Attach test headers to Kafka produce requests."""
-        test = current_test()
-        if test is not None:
-            if headers is None:
-                raise TypeError('Produce request missing headers list')
-            headers.extend([
-                (k, want_bytes(v)) for k, v in test.as_headers().items()
-            ])
+        pass
 
     def case(self, *,
              name: str = None,
@@ -297,59 +284,27 @@ class LiveCheck(faust.App):
 
     async def post_report(self, report: TestReport) -> None:
         """Publish test report to reporting topic."""
-        key = None
-        if report.test is not None:
-            key = report.test.id
-        await self.reports.send(key=key, value=report)
+        pass
 
     async def on_start(self) -> None:
         """Call when LiveCheck application starts."""
-        await super().on_start()
-        self._install_bus_agent()
-        self._install_test_execution_agent()
+        pass
 
     async def on_started(self) -> None:
         """Call when LiveCheck application is fully started."""
-        await super().on_started()
-        for case in self.cases.values():
-            await self.add_runtime_dependency(case)
+        pass
 
     def _install_bus_agent(self) -> AgentT:
-        return self.agent(
-            channel=self.bus,
-            concurrency=self.bus_concurrency,
-        )(self._populate_signals)
+        pass
 
     def _install_test_execution_agent(self) -> AgentT:
-        return self.agent(
-            channel=self.pending_tests,
-            concurrency=self.test_concurrency,
-        )(self._execute_tests)
+        pass
 
     async def _populate_signals(self, events: StreamT[SignalEvent]) -> None:
-        async for test_id, event in events.items():
-            event.case_name = self._prepare_case_name(event.case_name)
-            try:
-                case = self.cases[event.case_name]
-            except KeyError:
-                self.log.error('Received signal %r for unregistered case %r',
-                               event, (test_id, event.case_name))
-            else:
-                await case.resolve_signal(test_id, event)
+        pass
 
     async def _execute_tests(self, tests: StreamT[TestExecution]) -> None:
-        async for test_id, test in tests.items():
-            test.case_name = self._prepare_case_name(test.case_name)
-            try:
-                case = self.cases[test.case_name]
-            except KeyError:
-                self.log.error('Unregistered test case %r with id %r: %r',
-                               test.case_name, test_id, test)
-            else:
-                try:
-                    await case.execute(test)
-                except LiveCheckError:
-                    pass
+        pass
 
     def _prepare_case_name(self, name: str) -> str:
         if name.startswith('__main__.'):
@@ -361,26 +316,14 @@ class LiveCheck(faust.App):
     @cached_property
     def bus(self) -> TopicT:
         """Topic used for signal communication."""
-        return self.topic(
-            self.bus_topic_name,
-            key_type=str,
-            value_type=SignalEvent,
-        )
+        pass
 
     @cached_property
     def pending_tests(self) -> TopicT:
         """Topic used to keep pending test executions."""
-        return self.topic(
-            self.test_topic_name,
-            key_type=str,
-            value_type=TestExecution,
-        )
+        pass
 
     @cached_property
     def reports(self) -> TopicT:
         """Topic used to log test reports."""
-        return self.topic(
-            self.report_topic_name,
-            key_type=str,
-            value_type=TestReport,
-        )
+        pass

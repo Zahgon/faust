@@ -143,11 +143,7 @@ class Blueprint(BlueprintT):
                *,
                name: Optional[str] = None) -> None:
         """Add static route."""
-        _name: str = name or 'static'
-        if not _name.startswith(self.name + '.'):
-            _name = f'{self.name}.{name}'
-        fut = FutureStaticRoute(uri, Path(file_or_directory), _name)
-        self.static_routes.append(fut)
+        pass
 
     def register(self, app: AppT,
                  *,

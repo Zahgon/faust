@@ -231,12 +231,10 @@ class Agent(AgentT, Service):
 
     def on_init_dependencies(self) -> Iterable[ServiceT]:
         """Return list of services dependencies required to start agent."""
-        # Agent service is now a child of app.
-        self.beacon.reattach(self.app.agents.beacon)
-        return []
+        pass
 
     def actor_tracebacks(self) -> List[str]:
-        return [actor.traceback() for actor in self._actors]
+        pass
 
     async def _start_one(self,
                          *,
@@ -247,112 +245,44 @@ class Agent(AgentT, Service):
         # an index of None means there's only one instance,
         # and `index is None` is used as a test by functions that
         # disallows concurrency.
-        index = index if self.concurrency > 1 else None
-        return await self._start_task(
-            index=index,
-            active_partitions=active_partitions,
-            stream=stream,
-            channel=channel,
-            beacon=self.beacon,
-        )
+        pass
 
     async def _start_one_supervised(
             self,
             index: Optional[int] = None,
             active_partitions: Optional[Set[TP]] = None,
             stream: StreamT = None) -> ActorT:
-        aref = await self._start_one(
-            index=index,
-            active_partitions=active_partitions,
-            stream=stream,
-        )
-        self.supervisor.add(aref)
-        await aref.maybe_start()
-        return aref
+        pass
 
     async def _start_for_partitions(self,
                                     active_partitions: Set[TP]) -> ActorT:
-        assert active_partitions
-        self.log.info('Starting actor for partitions %s', active_partitions)
-        return await self._start_one_supervised(None, active_partitions)
+        pass
 
     async def on_start(self) -> None:
         """Call when an agent starts."""
-        self.supervisor = self._new_supervisor()
-        await self._on_start_supervisor()
+        pass
 
     def _new_supervisor(self) -> SupervisorStrategyT:
-        return self._get_supervisor_strategy()(
-            max_restarts=100.0,
-            over=1.0,
-            replacement=self._replace_actor,
-            loop=self.loop,
-            beacon=self.beacon,
-        )
+        pass
 
     async def _replace_actor(self, service: ServiceT, index: int) -> ServiceT:
-        aref = cast(ActorRefT, service)
-        return await self._start_one(
-            index=index,
-            active_partitions=aref.active_partitions,
-            stream=aref.stream,
-            channel=cast(ChannelT, aref.stream.channel),
-        )
+        pass
 
     def _get_supervisor_strategy(self) -> Type[SupervisorStrategyT]:
-        SupervisorStrategy = self.supervisor_strategy
-        if SupervisorStrategy is None:
-            return cast(Type[SupervisorStrategyT],
-                        self.app.conf.agent_supervisor)
-        else:
-            return SupervisorStrategy
+        pass
 
     async def _on_start_supervisor(self) -> None:
-        active_partitions = self._get_active_partitions()
-        channel: ChannelT = cast(ChannelT, None)
-        for i in range(self.concurrency):
-            res = await self._start_one(
-                index=i,
-                active_partitions=active_partitions,
-                channel=channel,
-            )
-            if channel is None:
-                # First concurrency actor creates channel,
-                # then we reuse it for --concurrency=n.
-                # This way they share the same queue.
-                channel = res.stream.channel
-            self.supervisor.add(res)
-        await self.supervisor.start()
+        pass
 
     def _get_active_partitions(self) -> Optional[Set[TP]]:
-        active_partitions: Optional[Set[TP]] = None
-        if self.isolated_partitions:
-            # when we start our first agent, we create the set of
-            # partitions early, and save it in ._pending_active_partitions.
-            # That way we can update the set once partitions are assigned,
-            # and the actor we started may be assigned one of the partitions.
-            active_partitions = self._pending_active_partitions = set()
-        return active_partitions
+        pass
 
     async def on_stop(self) -> None:
         """Call when an agent stops."""
-        # Agents iterate over infinite streams, so we cannot wait for it
-        # to stop.
-        # Instead we cancel it and this forces the stream to ack the
-        # last message processed (but not the message causing the error
-        # to be raised).
-        await self._stop_supervisor()
-        with suppress(asyncio.CancelledError):
-            await asyncio.gather(*[
-                aref.actor_task for aref in self._actors
-                if aref.actor_task is not None
-            ])
-        self._actors.clear()
+        pass
 
     async def _stop_supervisor(self) -> None:
-        if self.supervisor:
-            await self.supervisor.stop()
-            self.supervisor = cast(SupervisorStrategyT, None)
+        pass
 
     def cancel(self) -> None:
         """Cancel agent and its actor instances running in this process."""
@@ -361,12 +291,7 @@ class Agent(AgentT, Service):
 
     async def on_partitions_revoked(self, revoked: Set[TP]) -> None:
         """Call when partitions are revoked."""
-        T = traced_from_parent_span()
-        if self.isolated_partitions:
-            # isolated: start/stop actors for each partition
-            await T(self.on_isolated_partitions_revoked)(revoked)
-        else:
-            await T(self.on_shared_partitions_revoked)(revoked)
+        pass
 
     async def on_partitions_assigned(self, assigned: Set[TP]) -> None:
         """Call when partitions are assigned."""
@@ -378,48 +303,23 @@ class Agent(AgentT, Service):
 
     async def on_isolated_partitions_revoked(self, revoked: Set[TP]) -> None:
         """Call when isolated partitions are revoked."""
-        self.log.dev('Partitions revoked')
-        T = traced_from_parent_span()
-        for tp in revoked:
-            aref: Optional[ActorRefT] = self._actor_by_partition.pop(tp, None)
-            if aref is not None:
-                await T(aref.on_isolated_partition_revoked)(tp)
+        pass
 
     async def on_isolated_partitions_assigned(self, assigned: Set[TP]) -> None:
         """Call when isolated partitions are assigned."""
-        T = traced_from_parent_span()
-        for tp in sorted(assigned):
-            await T(self._assign_isolated_partition)(tp)
+        pass
 
     async def _assign_isolated_partition(self, tp: TP) -> None:
-        T = traced_from_parent_span()
-        if (not self._first_assignment_done and
-                not self._actor_by_partition):
-            self._first_assignment_done = True
-            # if this is the first time we are assigned
-            # we need to reassign the agent we started at boot to
-            # one of the partitions.
-            T(self._on_first_isolated_partition_assigned)(tp)
-        await T(self._maybe_start_isolated)(tp)
+        pass
 
     def _on_first_isolated_partition_assigned(self, tp: TP) -> None:
-        assert self._actors
-        assert len(self._actors) == 1
-        self._actor_by_partition[tp] = next(iter(self._actors))
-        if self._pending_active_partitions is not None:
-            assert not self._pending_active_partitions
-            self._pending_active_partitions.add(tp)
+        pass
 
     async def _maybe_start_isolated(self, tp: TP) -> None:
-        try:
-            aref = self._actor_by_partition[tp]
-        except KeyError:
-            aref = await self._start_isolated(tp)
-            self._actor_by_partition[tp] = aref
-        await aref.on_isolated_partition_assigned(tp)
+        pass
 
     async def _start_isolated(self, tp: TP) -> ActorT:
-        return await self._start_for_partitions({tp})
+        pass
 
     async def on_shared_partitions_revoked(self, revoked: Set[TP]) -> None:
         """Call when non-isolated partitions are revoked."""
@@ -458,22 +358,7 @@ class Agent(AgentT, Service):
                      on_error: AgentErrorHandler = None,
                      **kwargs: Any) -> AgentTestWrapperT:  # pragma: no cover
         """Create new unit-testing wrapper for this agent."""
-        # flow control into channel queues are disabled at startup,
-        # so need to resume that.
-        self.app.flow_control.resume()
-
-        async def on_agent_error(agent: AgentT, exc: BaseException) -> None:
-            if on_error is not None:
-                await on_error(agent, exc)
-            await cast(AgentTestWrapper, agent).crash_test_agent(exc)
-
-        return cast(AgentTestWrapperT, self.clone(
-            cls=AgentTestWrapper,
-            channel=channel if channel is not None else self.app.channel(),
-            supervisor_strategy=supervisor_strategy or CrashingSupervisor,
-            original_channel=self.channel,
-            on_error=on_agent_error,
-            **kwargs))
+        pass
 
     def _prepare_channel(self,
                          channel: Union[str, ChannelT] = None,
@@ -536,44 +421,7 @@ class Agent(AgentT, Service):
                           active_partitions: Set[TP] = None,
                           channel: ChannelT = None) -> ActorRefT:
         """Create new actor from stream."""
-        we_created_stream = False
-        actual_stream: StreamT
-        if stream is None:
-            actual_stream = self.stream(
-                channel=channel,
-                concurrency_index=index,
-                active_partitions=active_partitions,
-            )
-            we_created_stream = True
-        else:
-            # reusing actor stream after agent restart
-            assert stream.concurrency_index == index
-            assert stream.active_partitions == active_partitions
-            actual_stream = stream
-
-        res = self.fun(actual_stream)
-        if isinstance(res, AsyncIterable):
-            if we_created_stream:
-                actual_stream.add_processor(self._maybe_unwrap_reply_request)
-            return cast(ActorRefT, AsyncIterableActor(
-                self,
-                actual_stream,
-                res,
-                index=actual_stream.concurrency_index,
-                active_partitions=actual_stream.active_partitions,
-                loop=self.loop,
-                beacon=self.beacon,
-            ))
-        else:
-            return cast(ActorRefT, AwaitableActor(
-                self,
-                actual_stream,
-                res,
-                index=actual_stream.concurrency_index,
-                active_partitions=actual_stream.active_partitions,
-                loop=self.loop,
-                beacon=self.beacon,
-            ))
+        pass
 
     def add_sink(self, sink: SinkT) -> None:
         """Add new sink to further handle results from this agent."""
@@ -602,9 +450,7 @@ class Agent(AgentT, Service):
         return s
 
     def _maybe_unwrap_reply_request(self, value: V) -> Any:
-        if isinstance(value, ReqRepRequest):
-            return value.value
-        return value
+        pass
 
     async def _start_task(self,
                           *,
@@ -616,106 +462,30 @@ class Agent(AgentT, Service):
         # If the agent is an async function we simply start it,
         # if it returns an AsyncIterable/AsyncGenerator we start a task
         # that will consume it.
-        actor = self(
-            index=index,
-            active_partitions=active_partitions,
-            stream=stream,
-            channel=channel,
-        )
-        return await self._prepare_actor(
-            actor, beacon if beacon is not None else self.beacon)
+        pass
 
     async def _prepare_actor(self, aref: ActorRefT,
                              beacon: NodeT) -> ActorRefT:
-        coro: Any
-        if isinstance(aref, Awaitable):
-            # agent does not yield
-            coro = aref
-            if self._sinks:
-                raise ImproperlyConfigured('Agent must yield to use sinks')
-        else:
-            # agent yields and is an AsyncIterator so we have to consume it.
-            coro = self._slurp(aref, aiter(aref))
-        task = asyncio.Task(self._execute_actor(coro, aref), loop=self.loop)
-        task._beacon = beacon  # type: ignore
-        aref.actor_task = task
-        self._actors.add(aref)
-        return aref
+        pass
 
     async def _execute_actor(self, coro: Awaitable, aref: ActorRefT) -> None:
         # This executes the agent task itself, and does exception handling.
-        _current_agent.set(self)
-        try:
-            await coro
-        except asyncio.CancelledError:
-            if self.should_stop:
-                raise
-        except Exception as exc:
-            if self._on_error is not None:
-                await self._on_error(self, exc)
-
-            # Mark ActorRef as dead, so that supervisor thread
-            # can start a new one.
-            await aref.crash(exc)
-            self.supervisor.wakeup()
+        pass
 
     async def _slurp(self, res: ActorRefT, it: AsyncIterator) -> None:
         # this is used when the agent returns an AsyncIterator,
         # and simply consumes that async iterator.
-        stream: Optional[StreamT] = None
-        async for value in it:
-            self.log.debug('%r yielded: %r', self.fun, value)
-            if stream is None:
-                stream = res.stream.get_active_stream()
-            event = stream.current_event
-            if event is not None:
-                headers = event.headers
-                reply_to: Optional[str] = None
-                correlation_id: Optional[str] = None
-                if isinstance(event.value, ReqRepRequest):
-                    req: ReqRepRequest = event.value
-                    reply_to = req.reply_to
-                    correlation_id = req.correlation_id
-                elif headers:
-                    reply_to_bytes = headers.get('Faust-Ag-ReplyTo')
-                    if reply_to_bytes:
-                        reply_to = want_str(reply_to_bytes)
-                        correlation_id_bytes = headers.get(
-                            'Faust-Ag-CorrelationId')
-                        if correlation_id_bytes:
-                            correlation_id = want_str(correlation_id_bytes)
-                if reply_to is not None:
-                    await self._reply(
-                        event.key, value, reply_to, cast(str, correlation_id))
-            await self._delegate_to_sinks(value)
+        pass
 
     async def _delegate_to_sinks(self, value: Any) -> None:
-        for sink in self._sinks:
-            if isinstance(sink, AgentT):
-                await sink.send(value=value)
-            elif isinstance(sink, ChannelT):
-                await cast(TopicT, sink).send(value=value)
-            else:
-                await maybe_async(cast(Callable, sink)(value))
+        pass
 
     async def _reply(self, key: Any, value: Any,
                      reply_to: str, correlation_id: str) -> None:
-        assert reply_to
-        response = self._response_class(value)(
-            key=key,
-            value=value,
-            correlation_id=correlation_id,
-        )
-        await self.app.send(
-            reply_to,
-            key=None,
-            value=response,
-        )
+        pass
 
     def _response_class(self, value: Any) -> Type[ReqRepResponse]:
-        if isinstance(value, ModelT):
-            return ModelReqRepResponse
-        return ReqRepResponse
+        pass
 
     async def cast(self,
                    value: V = None,
@@ -751,20 +521,7 @@ class Agent(AgentT, Service):
         This version will wait until the result is available
         and return the processed value.
         """
-        p = await self.ask_nowait(
-            value,
-            key=key,
-            partition=partition,
-            timestamp=timestamp,
-            headers=headers,
-            reply_to=reply_to or self.app.conf.reply_to,
-            correlation_id=correlation_id,
-            force=True,  # Send immediately, since we are waiting for result.
-        )
-        app = cast(_App, self.app)
-        await app._reply_consumer.add(p.correlation_id, p)
-        await app.maybe_start_client()
-        return await p
+        pass
 
     async def ask_nowait(self,
                          value: V = None,
@@ -877,10 +634,7 @@ class Agent(AgentT, Service):
         A map operation iterates over results as they arrive.
         See :meth:`join` and :meth:`kvjoin` if you want them in order.
         """
-        # Map takes only values, but can provide one key that is used for all.
-        async for value in self.kvmap(
-                ((key, v) async for v in aiter(values)), reply_to):
-            yield value
+        pass
 
     async def kvmap(
             self,
@@ -892,28 +646,7 @@ class Agent(AgentT, Service):
         A map operation iterates over results as they arrive.
         See :meth:`join` and :meth:`kvjoin` if you want them in order.
         """
-        # kvmap takes (key, value) pairs.
-        reply_to = self._get_strtopic(reply_to or self.app.conf.reply_to)
-
-        # BarrierState is the promise that keeps track of pending results.
-        # It contains a list of individual ReplyPromises.
-        barrier = BarrierState(reply_to)
-
-        async for _ in self._barrier_send(barrier, items, reply_to):
-            # Now that we've sent a message, try to see if we have any
-            # replies.
-            try:
-                _, val = barrier.get_nowait()
-            except asyncio.QueueEmpty:
-                pass
-            else:
-                yield val
-        # All the messages have been sent so finalize the barrier.
-        barrier.finalize()
-
-        # Then iterate over the results in the group.
-        async for _, value in barrier.iterate():
-            yield value
+        pass
 
     async def join(self,
                    values: Union[AsyncIterable[V], Iterable[V]],
@@ -987,14 +720,11 @@ class Agent(AgentT, Service):
             yield correlation_id
 
     def _repr_info(self) -> str:
-        return shorten_fqdn(self.name)
+        pass
 
     def get_topic_names(self) -> Iterable[str]:
         """Return list of topic names this agent subscribes to."""
-        channel = self.channel
-        if isinstance(channel, TopicT):
-            return channel.topics
-        return []
+        pass
 
     @property
     def channel(self) -> ChannelT:
@@ -1016,17 +746,11 @@ class Agent(AgentT, Service):
     @property
     def channel_iterator(self) -> AsyncIterator:
         """Return channel agent iterates over."""
-        # The channel is "memoized" here, so subsequent access to
-        # instance.channel_iterator will return the same value.
-        if self._channel_iterator is None:
-            # we do not use aiter(channel) here, because
-            # that will also add it to the topic conductor too early.
-            self._channel_iterator = self.channel.clone(is_iterator=False)
-        return self._channel_iterator
+        pass
 
     @channel_iterator.setter
     def channel_iterator(self, it: AsyncIterator) -> None:
-        self._channel_iterator = it
+        pass
 
     @property
     def label(self) -> str:
@@ -1062,22 +786,16 @@ class AgentTestWrapper(Agent, AgentTestWrapperT):  # pragma: no cover
         self.processed_offset = 0
 
     async def on_stop(self) -> None:
-        await self._stream.stop()
-        await super().on_stop()
+        pass
 
     def stream(self, *args: Any, **kwargs: Any) -> StreamT:
         return self._stream.get_active_stream()
 
     async def _on_value_processed(self, value: Any) -> None:
-        async with self.new_value_processed:
-            self.results[self.processed_offset] = value
-            self.processed_offset += 1
-            self.new_value_processed.notify_all()
+        pass
 
     async def crash_test_agent(self, exc: BaseException) -> None:
-        self._crash(exc)
-        async with self.new_value_processed:
-            self.new_value_processed.notify_all()
+        pass
 
     async def put(self,
                   value: V = None,

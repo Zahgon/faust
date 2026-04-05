@@ -76,39 +76,25 @@ class ChangeloggedSet(ChangeloggedObject, ManagedUserSet[VT]):
         self.data = set()
 
     def on_add(self, value: VT) -> None:
-        self.manager.send_changelog_event(self.key, OPERATION_ADD, value)
+        pass
 
     def on_discard(self, value: VT) -> None:
-        self.manager.send_changelog_event(self.key, OPERATION_DISCARD, value)
+        pass
 
     def on_change(self, added: Set[VT], removed: Set[VT]) -> None:
-        self.manager.send_changelog_event(
-            self.key, OPERATION_UPDATE, [added, removed])
+        pass
 
     def sync_from_storage(self, value: Any) -> None:
-        self.data = cast(Set, value)
+        pass
 
     def as_stored_value(self) -> Any:
-        return self.data
+        pass
 
     def __iter__(self) -> Iterator[VT]:
         return iter(self.data)
 
     def apply_changelog_event(self, operation: int, value: Any) -> None:
-        if operation == OPERATION_ADD:
-            self.data.add(value)
-        elif operation == OPERATION_DISCARD:
-            self.data.discard(value)
-        elif operation == OPERATION_UPDATE:
-            tup = cast(Iterable[List], value)
-            added: List
-            removed: List
-            added, removed = tup
-            self.data |= set(added)
-            self.data -= set(removed)
-        else:
-            raise NotImplementedError(
-                f'Unknown operation {operation}: key={self.key!r}')
+        pass
 
 
 class ChangeloggedSetManager(ChangeloggedObjectManager):
@@ -208,22 +194,22 @@ class SetTableManager(Service, Generic[KT, VT]):
 
         Members common to both sets will be removed.
         """
-        await self._send_operation(SetAction.SYMDIFF, key, members)
+        pass
 
     def _update(self, key: KT, members: List[VT]) -> None:
-        self.set_table[key].update(members)
+        pass
 
     def _difference_update(self, key: KT, members: List[VT]) -> None:
-        self.set_table[key].difference_update(members)
+        pass
 
     def _clear(self, key: KT, members: List[VT]) -> None:
         self.set_table[key].clear()
 
     def _intersection_update(self, key: KT, members: List[VT]) -> None:
-        self.set_table[key].intersection_update(members)
+        pass
 
     def _symmetric_difference_update(self, key: KT, members: List[VT]) -> None:
-        self.set_table[key].symmetric_difference_update(members)
+        pass
 
     async def _send_operation(self,
                               action: SetAction,
@@ -246,18 +232,7 @@ class SetTableManager(Service, Generic[KT, VT]):
         )(self._modify_set)
 
     async def _modify_set(self, stream: StreamT[SetManagerOperation]) -> None:
-        actions = self.actions
-        _maybe_model = maybe_model
-        async for set_key, set_operation in stream.items():
-            try:
-                action = SetAction(set_operation.action)
-            except ValueError:
-                self.log.exception(
-                    'Unknown set operation: %r', set_operation.action)
-            else:
-                members = [_maybe_model(m) for m in set_operation.members]
-                handler = actions[action]
-                handler(set_key, members)
+        pass
 
     @cached_property
     def topic(self) -> TopicT:
@@ -297,12 +272,10 @@ class SetTable(Table[KT, ChangeloggedSet[VT]]):
 
     async def on_start(self) -> None:
         """Call when set table starts."""
-        if self.start_manager:
-            await self.add_runtime_dependency(self.manager)
-        await super().on_start()
+        pass
 
     def _new_store(self) -> StoreT:
-        return ChangeloggedSetManager(self)
+        pass
 
     def __getitem__(self, key: KT) -> ChangeloggedSet[VT]:
         # FastUserDict looks up using `key in self.data`

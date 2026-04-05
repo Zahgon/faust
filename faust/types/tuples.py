@@ -197,20 +197,7 @@ class Message:
 
     @classmethod
     def from_message(cls, message: Any, tp: TP) -> 'Message':
-        return cls(
-            message.topic,
-            message.partition,
-            message.offset,
-            message.timestamp,
-            message.timestamp_type,
-            message.headers,
-            message.key,
-            message.value,
-            message.checksum,
-            message.serialized_key_size,
-            message.serialized_value_size,
-            tp,
-        )
+        pass
 
     def __repr__(self) -> str:
         return f'<{type(self).__name__}: {self.tp} offset={self.offset}>'

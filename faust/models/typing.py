@@ -274,7 +274,7 @@ class Node(abc.ABC):
         ...
 
     def random_identifier(self, n: int = 8) -> str:
-        return ''.join(random.choice(string.ascii_letters) for _ in range(n))
+        pass
 
     @abc.abstractmethod
     def build(self, var: Variable, *args: Type) -> str:
@@ -357,11 +357,7 @@ class DecimalNode(Node):
 
     @staticmethod
     def _maybe_coerce(value: Union[str, Decimal] = None) -> Optional[Decimal]:
-        if value is not None:
-            if not isinstance(value, Decimal):
-                return str_to_decimal(value)
-            return value
-        return None
+        pass
 
 
 class DatetimeNode(Node):
@@ -378,11 +374,7 @@ class DatetimeNode(Node):
 
     def _maybe_coerce(
             self, value: Union[str, datetime] = None) -> Optional[datetime]:
-        if value is not None:
-            if isinstance(value, str):
-                return self.root.date_parser(value)
-            return value
-        return None
+        pass
 
 
 class NamedTupleNode(Node):
@@ -410,16 +402,15 @@ class NamedTupleNode(Node):
         return f'{self.local_name}({fields})'
 
     def next_namedtuple_name(self, typ: Type[Tuple]) -> str:
-        num = next(TUPLE_NAME_COUNTER)
-        return f'namedtuple_{num}_{typ.__name__}'
+        pass
 
     @cached_property
     def local_name(self) -> str:
-        return self.next_namedtuple_name(self.expr)
+        pass
 
     @cached_property
     def global_name(self) -> str:
-        return '_' + self.local_name + '_'
+        pass
 
 
 class TupleNode(Node):
@@ -548,8 +539,7 @@ class ModelNode(Node):
 
     @cached_property
     def Model(self) -> Type[ModelT]:
-        from .base import Model
-        return Model
+        pass
 
 
 class UserNode(Node):
@@ -569,11 +559,7 @@ class UserNode(Node):
         self.root.found_types[self.type].add(self.expr)
 
     def _maybe_coerce(self, value: Any) -> Any:
-        if value is None:
-            return None
-        if isinstance(value, JSON_TYPES):
-            return self.handler(value)
-        return value
+        pass
 
     def build(self, var: Variable, *args: Type) -> str:
         self.root.add_closure(
@@ -697,19 +683,19 @@ class TypeExpression(RootNode):
 
     @property
     def has_models(self) -> bool:
-        return bool(self.type_stats[NodeType.MODEL])
+        pass
 
     @property
     def has_custom_types(self) -> bool:
-        return bool(self.type_stats.keys() & USER_TYPES)
+        pass
 
     @property
     def has_generic_types(self) -> bool:
-        return bool(self.type_stats.keys() & GENERIC_TYPES)
+        pass
 
     @property
     def has_nonfield_types(self) -> bool:
-        return bool(self.type_stats.keys() & NONFIELD_TYPES)
+        pass
 
 
 def _is_NoneType(t: Any) -> bool:

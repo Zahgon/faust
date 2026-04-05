@@ -21,30 +21,18 @@ class models(AppCommand):
 
     async def run(self, *, builtins: bool) -> None:
         """Dump list of available models in this application."""
-        self.say(
-            self.tabulate(
-                [self.model_to_row(model) for model in self.models(builtins)],
-                headers=self.headers,
-                title=self.title,
-            ))
+        pass
 
     def models(self, builtins: bool) -> Sequence[Type[ModelT]]:
         """Convert list of models to terminal table rows."""
-        sortkey = cast(Callable[[Type[ModelT]], Any], self.sortkey)
-        return [
-            model for model in sorted(registry.values(), key=sortkey)
-            if not model._options.namespace.startswith('@') or builtins
-        ]
+        pass
 
     def model_to_row(self, model: Type[ModelT]) -> Sequence[str]:
         """Convert model fields to terminal table columns."""
-        return [
-            self.bold_tail(self._name(model)),
-            self.dark(self._help(model)),
-        ]
+        pass
 
     def _name(self, model: Type[ModelT]) -> str:
-        return self.abbreviate_fqdn(model._options.namespace)
+        pass
 
     def _help(self, model: Type[ModelT]) -> str:
-        return model.__doc__ or '<N/A>'
+        pass

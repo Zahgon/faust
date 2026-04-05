@@ -46,19 +46,7 @@ class Registry(RegistryT):
             serializer: Codec to use for this value.  If not set
                the default will be used (:attr:`key_serializer`).
         """
-        if key is None:
-            if typ is not None and issubclass(typ, ModelT):
-                raise KeyDecodeError(f'Expected {typ!r}, received {key!r}!')
-            return key
-        serializer = serializer or self.key_serializer
-        try:
-            payload = self._loads(serializer, key)
-            return cast(K, self._prepare_payload(typ, payload))
-        except MemoryError:
-            raise
-        except Exception as exc:
-            raise KeyDecodeError(str(exc)).with_traceback(
-                sys.exc_info()[2]) from exc
+        pass
 
     def _loads(self, serializer: CodecArg, data: bytes) -> Any:
         return loads(serializer, data)
@@ -89,38 +77,10 @@ class Registry(RegistryT):
             serializer: Codec to use for this value.  If not set
                the default will be used (:attr:`value_serializer`).
         """
-        if value is None:
-            if typ is not None and issubclass(typ, ModelT):
-                raise ValueDecodeError(
-                    f'Expected {typ!r}, received {value!r}!')
-            return None
-        serializer = self._serializer(typ, serializer, self.value_serializer)
-        try:
-            payload = self._loads(serializer, value)
-            return cast(V, self._prepare_payload(typ, payload))
-        except MemoryError:
-            raise
-        except Exception as exc:
-            raise ValueDecodeError(str(exc)).with_traceback(
-                sys.exc_info()[2]) from exc
+        pass
 
     def _prepare_payload(self, typ: Optional[ModelArg], value: Any) -> Any:
-        if typ is None:  # (autodetect)
-            return self.Model._maybe_reconstruct(value)
-        elif typ is int:
-            return int(want_str(value))
-        elif typ is float:
-            return float(want_str(value))
-        elif typ is Decimal:
-            return Decimal(want_str(value))
-        elif typ is str:
-            return want_str(value)
-        elif typ is bytes:
-            return want_bytes(value)
-        else:
-            # type set to Model
-            model = cast(ModelT, typ)
-            return model.from_data(value, preferred_type=model)
+        pass
 
     def dumps_key(self,
                   typ: Optional[ModelArg],
@@ -179,5 +139,4 @@ class Registry(RegistryT):
     @cached_property
     def Model(self) -> Type[ModelT]:
         """Return the :class:`faust.Model` class used by this serializer."""
-        from faust.models.base import Model
-        return Model
+        pass

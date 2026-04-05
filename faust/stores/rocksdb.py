@@ -112,24 +112,11 @@ class RocksDBOptions:
 
     def open(self, path: Path, *, read_only: bool = False) -> DB:
         """Open RocksDB database using this configuration."""
-        return rocksdb.DB(str(path), self.as_options(), read_only=read_only)
+        pass
 
     def as_options(self) -> Options:
         """Return :class:`rocksdb.Options` object using this configuration."""
-        return rocksdb.Options(
-            create_if_missing=True,
-            max_open_files=self.max_open_files,
-            write_buffer_size=self.write_buffer_size,
-            max_write_buffer_number=self.max_write_buffer_number,
-            target_file_size_base=self.target_file_size_base,
-            table_factory=rocksdb.BlockBasedTableFactory(
-                filter_policy=rocksdb.BloomFilterPolicy(
-                    self.bloom_filter_size),
-                block_cache=rocksdb.LRUCache(self.block_cache_size),
-                block_cache_compressed=rocksdb.LRUCache(
-                    self.block_cache_compressed_size),
-            ),
-            **self.extra_options)
+        pass
 
 
 class Store(base.SerializedStore):
@@ -192,8 +179,7 @@ class Store(base.SerializedStore):
         to only read the events that occurred recently while
         we were not an active replica.
         """
-        self._db_for_partition(tp.partition).put(
-            self.offset_key, str(offset).encode())
+        pass
 
     async def need_active_standby_for(self, tp: TP) -> bool:
         """Decide if an active standby is needed for this topic partition.
@@ -216,14 +202,7 @@ class Store(base.SerializedStore):
             $ myproj --datadir=/var/faust/w3 worker -l info --web-port=6068
             $ myproj --datadir=/var/faust/w4 worker -l info --web-port=6069
         """
-        try:
-            self._db_for_partition(tp.partition)
-        except rocksdb.errors.RocksIOError as exc:
-            if 'lock' not in repr(exc):
-                raise
-            return False
-        else:
-            return True
+        pass
 
     def apply_changelog_batch(self,
                               batch: Iterable[EventT],
@@ -238,34 +217,10 @@ class Store(base.SerializedStore):
             to_value: A callable you can use to deserialize the value
                 of a changelog event.
         """
-        batches: DefaultDict[int, rocksdb.WriteBatch]
-        batches = defaultdict(rocksdb.WriteBatch)
-        tp_offsets: Dict[TP, int] = {}
-        for event in batch:
-            tp, offset = event.message.tp, event.message.offset
-            tp_offsets[tp] = (
-                offset if tp not in tp_offsets
-                else max(offset, tp_offsets[tp])
-            )
-            msg = event.message
-            if msg.value is None:
-                batches[msg.partition].delete(msg.key)
-            else:
-                batches[msg.partition].put(msg.key, msg.value)
-
-        for partition, batch in batches.items():
-            self._db_for_partition(partition).write(batch)
-
-        for tp, offset in tp_offsets.items():
-            self.set_persisted_offset(tp, offset)
+        pass
 
     def _set(self, key: bytes, value: Optional[bytes]) -> None:
-        event = current_event()
-        assert event is not None
-        partition = event.message.partition
-        db = self._db_for_partition(partition)
-        self._key_index[key] = partition
-        db.put(key, value)
+        pass
 
     def _db_for_partition(self, partition: int) -> DB:
         try:
@@ -305,8 +260,7 @@ class Store(base.SerializedStore):
         return None
 
     def _del(self, key: bytes) -> None:
-        for db in self._dbs_for_key(key):
-            db.delete(key)
+        pass
 
     async def on_rebalance(self,
                            table: CollectionT,
@@ -377,65 +331,39 @@ class Store(base.SerializedStore):
             ...
 
     def _contains(self, key: bytes) -> bool:
-        for db in self._dbs_for_key(key):
-            # bloom filter: false positives possible, but not false negatives
-            if db.key_may_exist(key)[0] and db.get(key) is not None:
-                return True
-        return False
+        pass
 
     def _dbs_for_key(self, key: bytes) -> Iterable[DB]:
         # Returns cached db if key is in index, otherwise all dbs
         # for linear search.
-        try:
-            return [self._dbs[self._key_index[key]]]
-        except KeyError:
-            return self._dbs.values()
+        pass
 
     def _dbs_for_actives(self) -> Iterator[DB]:
-        actives = self.app.assignor.assigned_actives()
-        topic = self.table._changelog_topic_name()
-        for partition, db in self._dbs.items():
-            tp = TP(topic=topic, partition=partition)
-            # for global tables, keys from all
-            # partitions are available.
-            if tp in actives or self.table.is_global:
-                yield db
+        pass
 
     def _size(self) -> int:
-        return sum(self._size1(db) for db in self._dbs_for_actives())
+        pass
 
     def _visible_keys(self, db: DB) -> Iterator[bytes]:
-        it = db.iterkeys()  # noqa: B301
-        it.seek_to_first()
-        for key in it:
-            if key != self.offset_key:
-                yield key
+        pass
 
     def _visible_items(self, db: DB) -> Iterator[Tuple[bytes, bytes]]:
-        it = db.iteritems()  # noqa: B301
-        it.seek_to_first()
-        for key, value in it:
-            if key != self.offset_key:
-                yield key, value
+        pass
 
     def _visible_values(self, db: DB) -> Iterator[bytes]:
-        for _, value in self._visible_items(db):
-            yield value
+        pass
 
     def _size1(self, db: DB) -> int:
-        return sum(1 for _ in self._visible_keys(db))
+        pass
 
     def _iterkeys(self) -> Iterator[bytes]:
-        for db in self._dbs_for_actives():
-            yield from self._visible_keys(db)
+        pass
 
     def _itervalues(self) -> Iterator[bytes]:
-        for db in self._dbs_for_actives():
-            yield from self._visible_values(db)
+        pass
 
     def _iteritems(self) -> Iterator[Tuple[bytes, bytes]]:
-        for db in self._dbs_for_actives():
-            yield from self._visible_items(db)
+        pass
 
     def _clear(self) -> None:
         raise NotImplementedError('TODO')  # XXX cannot reset tables
@@ -447,10 +375,7 @@ class Store(base.SerializedStore):
             Only local data will be removed, table changelog partitions
             in Kafka will not be affected.
         """
-        self._dbs.clear()
-        self._key_index.clear()
-        with suppress(FileNotFoundError):
-            shutil.rmtree(self.path.absolute())
+        pass
 
     def partition_path(self, partition: int) -> Path:
         """Return :class:`pathlib.Path` to db file of specific partition."""
@@ -472,9 +397,9 @@ class Store(base.SerializedStore):
         Returns:
             :class:`pathlib.Path`.
         """
-        return self.app.conf.tabledir
+        pass
 
     @property
     def basename(self) -> Path:
         """Return the name of this table, used as filename prefix."""
-        return Path(self.url.path)
+        pass

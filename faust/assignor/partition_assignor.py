@@ -92,205 +92,72 @@ class PartitionAssignor(
 
     @property
     def changelog_distribution(self) -> HostToPartitionMap:
-        return self._changelog_distribution
+        pass
 
     @changelog_distribution.setter
     def changelog_distribution(self, value: HostToPartitionMap) -> None:
-        self._changelog_distribution = value
-        self._tps_url = {
-            TP(topic, partition): url
-            for url, tps in self._changelog_distribution.items()
-            for topic, partitions in tps.items() for partition in partitions
-        }
+        pass
 
     @property
     def _metadata(self) -> ClientMetadata:
-        return ClientMetadata(
-            assignment=self._assignment,
-            url=str(self._url),
-            changelog_distribution=self.changelog_distribution,
-            topic_groups=self._topic_groups,
-        )
+        pass
 
     @property
     def _url(self) -> URL:
-        return self.app.conf.canonical_url
+        pass
 
     def on_assignment(
             self, assignment: ConsumerProtocolMemberMetadata) -> None:
-        metadata = cast(ClientMetadata,
-                        ClientMetadata.loads(
-                            self._decompress(assignment.user_data)))
-        self._assignment = metadata.assignment
-        self._topic_groups = dict(metadata.topic_groups)
-        self._active_tps = self._assignment.active_tps
-        self._standby_tps = self._assignment.standby_tps
-        self.changelog_distribution = metadata.changelog_distribution
-        a = sorted(assignment.assignment)
-        b = sorted(
-            self._assignment.kafka_protocol_assignment(self._table_manager))
-        assert a == b, f'{a!r} != {b!r}'
-        assert metadata.url == str(self._url)
+        pass
 
     def metadata(self, topics: Set[str]) -> ConsumerProtocolMemberMetadata:
-        return ConsumerProtocolMemberMetadata(self.version, list(topics),
-                                              self._metadata.dumps())
+        pass
 
     @classmethod
     def _group_co_subscribed(cls, topics: Set[str],
                              subscriptions: MemberSubscriptionMapping,
                              ) -> Iterable[Set[str]]:
-        topic_subscriptions: MutableMapping[str, Set[str]] = defaultdict(set)
-        for client, subscription in subscriptions.items():
-            for topic in subscription:
-                topic_subscriptions[topic].add(client)
-        co_subscribed: MutableMapping[Sequence[str], Set[str]] = defaultdict(
-            set)
-        for topic in topics:
-            clients = topic_subscriptions[topic]
-            assert clients, 'Subscribed clients for topic cannot be empty'
-            co_subscribed[tuple(clients)].add(topic)
-        return co_subscribed.values()
+        pass
 
     @classmethod
     def _get_copartitioned_groups(
             cls, topics: Set[str],
             cluster: ClusterMetadata,
             subscriptions: MemberSubscriptionMapping) -> CopartitionedGroups:
-        topics_by_partitions: MutableMapping[int, Set] = defaultdict(set)
-        for topic in topics:
-            num_partitions = len(cluster.partitions_for_topic(topic) or set())
-            if num_partitions == 0:
-                logger.warning('Ignoring missing topic: %r', topic)
-                continue
-            topics_by_partitions[num_partitions].add(topic)
-        # We group copartitioned topics by subscribed clients such that
-        # a group of co-subscribed topics with the same number of partitions
-        # are copartitioned
-        copart_grouped = {
-            num_partitions: cls._group_co_subscribed(topics, subscriptions)
-            for num_partitions, topics in topics_by_partitions.items()
-        }
-        return copart_grouped
+        pass
 
     @classmethod
     def _get_client_metadata(
             cls, metadata: ConsumerProtocolMemberMetadata) -> ClientMetadata:
-        client_metadata = ClientMetadata.loads(metadata.user_data)
-        return cast(ClientMetadata, client_metadata)
+        pass
 
     def _update_member_urls(self,
                             clients_metadata: ClientMetadataMapping) -> None:
-        self._member_urls = {
-            member_id: client_metadata.url
-            for member_id, client_metadata in clients_metadata.items()
-        }
+        pass
 
     def assign(
             self,
             cluster: ClusterMetadata,
             member_metadata: MemberMetadataMapping) -> MemberAssignmentMapping:
-        if self.app.tracer:
-            return self._trace_assign(cluster, member_metadata)
-        else:
-            return self._assign(cluster, member_metadata)
+        pass
 
     def _trace_assign(
             self,
             cluster: ClusterMetadata,
             member_metadata: MemberMetadataMapping) -> MemberAssignmentMapping:
-        assert self.app.tracer is not None
-        span = self.app.tracer.get_tracer('_faust').start_span(
-            operation_name='coordinator_assignment',
-            tags={'hostname': socket.gethostname()},
-        )
-        with span:
-            assignment = self._assign(cluster, member_metadata)
-            self.app._span_add_default_tags(span)
-            span.set_tag('assignment', assignment)
-        return assignment
+        pass
 
     def _assign(
             self,
             cluster: ClusterMetadata,
             member_metadata: MemberMetadataMapping) -> MemberAssignmentMapping:
-        sensor_state = self.app.sensors.on_assignment_start(self)
-        try:
-            assignment = self._perform_assignment(cluster, member_metadata)
-        except MemoryError:
-            raise
-        except Exception as exc:
-            self.app.sensors.on_assignment_error(self, sensor_state, exc)
-        else:
-            self.app.sensors.on_assignment_completed(self, sensor_state)
-        return assignment
+        pass
 
     def _perform_assignment(
             self,
             cluster: ClusterMetadata,
             member_metadata: MemberMetadataMapping) -> MemberAssignmentMapping:
-        cluster_assgn = ClusterAssignment()
-
-        clients_metadata = {
-            member_id: self._get_client_metadata(metadata)
-            for member_id, metadata in member_metadata.items()
-        }
-
-        subscriptions = {
-            member_id: cast(List[str], metadata.subscription)
-            for member_id, metadata in member_metadata.items()
-        }
-
-        for member_id in member_metadata:
-            cluster_assgn.add_client(member_id, subscriptions[member_id],
-                                     clients_metadata[member_id])
-        topics = cluster_assgn.topics()
-
-        copartitioned_groups = self._get_copartitioned_groups(
-            topics, cluster, subscriptions)
-
-        self._update_member_urls(clients_metadata)
-
-        # Initialize fresh assignment
-        assignments: ClientAssignmentMapping = {
-            member_id: ClientAssignment(actives={}, standbys={})
-            for member_id in member_metadata
-        }
-
-        topic_to_group_id = {}
-        partitions_by_topic = {}
-
-        for group_id, (num_partitions, topic_groups) in enumerate(sorted(
-                copartitioned_groups.items())):
-            for topics in topic_groups:
-                for topic in topics:
-                    topic_to_group_id[topic] = group_id
-                    partitions_by_topic[topic] = num_partitions
-                assert len(topics) > 0 and num_partitions > 0
-                # Get assignment for unique copartitioned group
-                assgn = cluster_assgn.copartitioned_assignments(topics)
-                assignor = CopartitionedAssignor(
-                    topics=topics,
-                    cluster_asgn=assgn,
-                    num_partitions=num_partitions,
-                    replicas=self.replicas,
-                )
-                # Update client assignments for copartitioned group
-                for client, copart_assn in assignor.get_assignment().items():
-                    assignments[client].add_copartitioned_assignment(
-                        copart_assn)
-
-        # Add all changelogs of global tables as standby for all members
-        assignments = self._global_table_standby_assignments(
-            assignments, partitions_by_topic)
-
-        changelog_distribution = self._get_changelog_distribution(assignments)
-        res = self._protocol_assignments(
-            assignments,
-            changelog_distribution,
-            topic_to_group_id,
-        )
-        return res
+        pass
 
     def _global_table_standby_assignments(
             self,
@@ -298,52 +165,22 @@ class PartitionAssignor(
             partitions_by_topic: Mapping[str, int]) -> ClientAssignmentMapping:
         # Ensures all members have access to all changelog partitions
         # as standbys, if not already as actives
-        for table in self._table_manager.data.values():
-            # Add changelog standbys only if global table
-            if table.is_global:
-                changelog_topic_name = table._changelog_topic_name()
-                num_partitions = partitions_by_topic[changelog_topic_name]
-                assert num_partitions is not None
-                all_partitions = set(range(0, num_partitions))
-                for assignment in assignments.values():
-                    active_partitions = set(
-                        assignment.actives.get(
-                            changelog_topic_name, []))
-                    # Only add those partitions as standby which aren't active
-                    standby_partitions = all_partitions - active_partitions
-                    assignment.standbys[
-                        changelog_topic_name] = list(standby_partitions)
-        return assignments
+        pass
 
     def _protocol_assignments(
             self,
             assignments: ClientAssignmentMapping,
             cl_distribution: HostToPartitionMap,
             topic_groups: Mapping[str, int]) -> MemberAssignmentMapping:
-        return {
-            client: ConsumerProtocolMemberAssignment(
-                self.version,
-                sorted(
-                    assignment.kafka_protocol_assignment(self._table_manager)),
-                self._compress(
-                    ClientMetadata(
-                        assignment=assignment,
-                        url=self._member_urls[client],
-                        changelog_distribution=cl_distribution,
-                        topic_groups=topic_groups,
-                    ).dumps(),
-                ),
-            )
-            for client, assignment in assignments.items()
-        }
+        pass
 
     @classmethod
     def _compress(cls, raw: bytes) -> bytes:
-        return zlib.compress(raw)
+        pass
 
     @classmethod
     def _decompress(cls, compressed: bytes) -> bytes:
-        return zlib.decompress(compressed)
+        pass
 
     @classmethod
     def _topics_filtered(cls, assignment: TopicToPartitionMap,
@@ -355,20 +192,15 @@ class PartitionAssignor(
 
     def _get_changelog_distribution(
             self, assignments: ClientAssignmentMapping) -> HostToPartitionMap:
-        topics = self._table_manager.changelog_topics
-        return {
-            self._member_urls[client]: self._topics_filtered(
-                assignment.actives, topics)
-            for client, assignment in assignments.items()
-        }
+        pass
 
     @property
     def name(self) -> str:
-        return 'faust'
+        pass
 
     @property
     def version(self) -> int:
-        return 4
+        pass
 
     def assigned_standbys(self) -> Set[TP]:
         return {
@@ -397,7 +229,7 @@ class PartitionAssignor(
         return URL(self._tps_url[self.app.producer.key_partition(topic, key)])
 
     def is_active(self, tp: TP) -> bool:
-        return tp in self._active_tps
+        pass
 
     def is_standby(self, tp: TP) -> bool:
         return tp in self._standby_tps

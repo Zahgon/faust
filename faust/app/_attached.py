@@ -162,40 +162,14 @@ class Attachments:
 
     async def commit(self, tp: TP, offset: int) -> None:
         """Publish all messaged attached to topic partition and offset."""
-        await asyncio.wait(
-            await self.publish_for_tp_offset(tp, offset),
-            return_when=asyncio.ALL_COMPLETED,
-            loop=self.app.loop,
-        )
+        pass
 
     async def publish_for_tp_offset(
             self, tp: TP, offset: int) -> List[Awaitable[RecordMetadata]]:
         """Publish messages attached to topic partition and offset."""
-        # publish pending messages attached to this TP+offset
-
-        # make shallow copy to allow concurrent modifications (append)
-        attached = list(self._attachments_for(tp, offset))
-        return [
-            await fut.message.channel.publish_message(fut, wait=False)
-            for fut in attached
-        ]
+        pass
 
     def _attachments_for(self, tp: TP,
                          commit_offset: int) -> Iterator[FutureMessage]:
         # Return attached messages for TopicPartition within committed offset.
-        attached = self._pending.get(tp)
-        while attached:
-            # get the entry with the smallest offset in this TP
-            entry = heappop(attached)
-
-            # if the entry offset is smaller or equal to the offset
-            # being committed
-            if entry[0] <= commit_offset:
-                # we use it by extracting the FutureMessage
-                # from Attachment tuple, where entry.message is
-                # Unordered[FutureMessage].
-                yield entry.message.value
-            else:
-                # else we put it back and exit (this was the smallest offset).
-                heappush(attached, entry)
-                break
+        pass

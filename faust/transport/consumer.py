@@ -148,36 +148,11 @@ class Fetcher(Service):
 
     async def on_stop(self) -> None:
         """Call when the fetcher is stopping."""
-        if self._drainer is not None and not self._drainer.done():
-            self._drainer.cancel()
-            while True:
-                try:
-                    await asyncio.wait_for(self._drainer, timeout=1.0)
-                except StopIteration:
-                    # Task is cancelled right before coro stops.
-                    break
-                except asyncio.CancelledError:
-                    break
-                except asyncio.TimeoutError:
-                    self.log.warning('Fetcher is ignoring cancel or slow :(')
-                else:  # pragma: no cover
-                    # coverage does not record this line as being executed
-                    # but I've verified that it is [ask]
-                    break
+        pass
 
     @Service.task
     async def _fetcher(self) -> None:
-        try:
-            consumer = cast(Consumer, self.app.consumer)
-            self._drainer = asyncio.ensure_future(
-                consumer._drain_messages(self),
-                loop=self.loop,
-            )
-            await self._drainer
-        except asyncio.CancelledError:
-            pass
-        finally:
-            self.set_shutdown()
+        pass
 
 
 class TransactionManager(Service, TransactionManagerT):
@@ -204,7 +179,7 @@ class TransactionManager(Service, TransactionManagerT):
 
     async def on_partitions_revoked(self, revoked: Set[TP]) -> None:
         """Call when the cluster is rebalancing and partitions are revoked."""
-        await traced_from_parent_span()(self.flush)()
+        pass
 
     async def on_rebalance(self,
                            assigned: Set[TP],
@@ -236,16 +211,10 @@ class TransactionManager(Service, TransactionManagerT):
                     tids=assigned_tids)(assigned_tids)
 
     async def _stop_transactions(self, tids: Iterable[str]) -> None:
-        T = traced_from_parent_span()
-        producer = self.producer
-        for transactional_id in tids:
-            await T(producer.stop_transaction)(transactional_id)
+        pass
 
     async def _start_transactions(self, tids: Iterable[str]) -> None:
-        T = traced_from_parent_span()
-        producer = self.producer
-        for transactional_id in tids:
-            await T(producer.maybe_begin_transaction)(transactional_id)
+        pass
 
     def _tps_to_transactional_ids(self, tps: Set[TP]) -> Set[str]:
         return {
@@ -303,22 +272,7 @@ class TransactionManager(Service, TransactionManagerT):
     async def commit(self, offsets: Mapping[TP, int],
                      start_new_transaction: bool = True) -> bool:
         """Commit offsets for partitions."""
-        producer = self.producer
-        group_id = self.app.conf.id
-        by_transactional_id: MutableMapping[str, MutableMapping[TP, int]]
-        by_transactional_id = defaultdict(dict)
-
-        for tp, offset in offsets.items():
-            group = self.app.assignor.group_for_topic(tp.topic)
-            transactional_id = f'{group_id}-{group}-{tp.partition}'
-            by_transactional_id[transactional_id][tp] = offset
-
-        if by_transactional_id:
-            await producer.commit_transactions(
-                by_transactional_id, group_id,
-                start_new_transaction=start_new_transaction,
-            )
-        return True
+        pass
 
     def key_partition(self, topic: str, key: bytes) -> TP:
         raise NotImplementedError()
@@ -347,7 +301,7 @@ class TransactionManager(Service, TransactionManagerT):
 
     def supports_headers(self) -> bool:
         """Return :const:`True` if the Kafka server supports headers."""
-        return self.producer.supports_headers()
+        pass
 
 
 class Consumer(Service, ConsumerT):
@@ -454,11 +408,7 @@ class Consumer(Service, ConsumerT):
 
     def on_init_dependencies(self) -> Iterable[ServiceT]:
         """Return list of services this consumer depends on."""
-        # We start the TransactionManager only if
-        # processing_guarantee='exactly_once'
-        if self.in_transaction:
-            return [self.transactions]
-        return []
+        pass
 
     def _reset_state(self) -> None:
         self._active_partitions = None
@@ -470,15 +420,10 @@ class Consumer(Service, ConsumerT):
 
     async def on_restart(self) -> None:
         """Call when the consumer is restarted."""
-        self._reset_state()
-        self.on_init()
+        pass
 
     def _get_active_partitions(self) -> Set[TP]:
-        tps = self._active_partitions
-        if tps is None:
-            return self._set_active_tps(self.assignment())
-        assert all(isinstance(x, TP) for x in tps)
-        return tps
+        pass
 
     def _set_active_tps(self, tps: Set[TP]) -> Set[TP]:
         xtps = self._active_partitions = ensure_TPset(tps)  # copy
@@ -486,16 +431,10 @@ class Consumer(Service, ConsumerT):
         return xtps
 
     def on_buffer_full(self, tp: TP) -> None:
-        active_partitions = self._get_active_partitions()
-        active_partitions.discard(tp)
-        self._buffered_partitions.add(tp)
+        pass
 
     def on_buffer_drop(self, tp: TP) -> None:
-        buffered_partitions = self._buffered_partitions
-        if tp in buffered_partitions:
-            active_partitions = self._get_active_partitions()
-            active_partitions.add(tp)
-            buffered_partitions.discard(tp)
+        pass
 
     @abc.abstractmethod
     async def _commit(
@@ -505,18 +444,7 @@ class Consumer(Service, ConsumerT):
 
     async def perform_seek(self) -> None:
         """Seek all partitions to their current committed position."""
-        read_offset = self._read_offset
-        _committed_offsets = await self.seek_to_committed()
-        read_offset.update({
-            tp: offset if offset is not None and offset >= 0 else None
-            for tp, offset in _committed_offsets.items()
-        })
-        committed_offsets = {
-            ensure_TP(tp): offset if offset else None
-            for tp, offset in _committed_offsets.items()
-            if offset is not None
-        }
-        self._committed_offset.update(committed_offsets)
+        pass
 
     @abc.abstractmethod
     async def seek_to_committed(self) -> Mapping[TP, int]:
@@ -525,11 +453,7 @@ class Consumer(Service, ConsumerT):
 
     async def seek(self, partition: TP, offset: int) -> None:
         """Seek partition to specific offset."""
-        self.log.dev('SEEK %r -> %r', partition, offset)
-        # reset livelock detection
-        await self._seek(partition, offset)
-        # set new read offset so we will reread messages
-        self._read_offset[ensure_TP(partition)] = offset if offset else None
+        pass
 
     @abc.abstractmethod
     async def _seek(self, partition: TP, offset: int) -> None:
@@ -547,15 +471,11 @@ class Consumer(Service, ConsumerT):
 
     def pause_partitions(self, tps: Iterable[TP]) -> None:
         """Pause fetching from partitions."""
-        tpset = ensure_TPset(tps)
-        self._get_active_partitions().difference_update(tpset)
-        self._paused_partitions.update(tpset)
+        pass
 
     def resume_partitions(self, tps: Iterable[TP]) -> None:
         """Resume fetching from partitions."""
-        tpset = ensure_TPset(tps)
-        self._get_active_partitions().update(tps)
-        self._paused_partitions.difference_update(tpset)
+        pass
 
     @abc.abstractmethod
     def _new_topicpartition(
@@ -563,25 +483,12 @@ class Consumer(Service, ConsumerT):
         ...
 
     def _is_changelog_tp(self, tp: TP) -> bool:
-        return tp.topic in self.app.tables.changelog_topics
+        pass
 
     @Service.transitions_to(CONSUMER_PARTITIONS_REVOKED)
     async def on_partitions_revoked(self, revoked: Set[TP]) -> None:
         """Call during rebalancing when partitions are being revoked."""
-        # NOTE:
-        # The ConsumerRebalanceListener is responsible for calling
-        # app.on_rebalance_start(), and this must have happened
-        # before we get to this point (see aiokafka implementation).
-        span = self.app._start_span_from_rebalancing('on_partitions_revoked')
-        T = traced_from_parent_span(span)
-        with span:
-            # see comment in on_partitions_assigned
-            # remove revoked partitions from active + paused tps.
-            if self._active_partitions is not None:
-                self._active_partitions.difference_update(revoked)
-            self._paused_partitions.difference_update(revoked)
-            await T(self._on_partitions_revoked, partitions=revoked)(
-                revoked)
+        pass
 
     @Service.transitions_to(CONSUMER_PARTITIONS_ASSIGNED)
     async def on_partitions_assigned(self, assigned: Set[TP]) -> None:
@@ -609,93 +516,12 @@ class Consumer(Service, ConsumerT):
     async def getmany(self,
                       timeout: float) -> AsyncIterator[Tuple[TP, Message]]:
         """Fetch batch of messages from server."""
-        # records' contain mapping from TP to list of messages.
-        # if there are two agents, consuming from topics t1 and t2,
-        # normal order of iteration would be to process each
-        # tp in the dict:
-        #    for tp. messages in records.items():
-        #        for message in messages:
-        #           yield tp, message
-        #
-        # The problem with this, is if we have prefetched 16k records
-        # for one partition, the other partitions won't even start processing
-        # before those 16k records are completed.
-        #
-        # So we try round-robin between the tps instead:
-        #
-        #    iterators: Dict[TP, Iterator] = {
-        #        tp: iter(messages)
-        #        for tp, messages in records.items()
-        #    }
-        #    while iterators:
-        #        for tp, messages in iterators.items():
-        #            yield tp, next(messages)
-        #            # remove from iterators if empty.
-        #
-        # The problem with this implementation is that
-        # the records mapping is ordered by TP, so records.keys()
-        # will look like this:
-        #
-        #  TP(topic='bar', partition=0)
-        #  TP(topic='bar', partition=1)
-        #  TP(topic='bar', partition=2)
-        #  TP(topic='bar', partition=3)
-        #  TP(topic='foo', partition=0)
-        #  TP(topic='foo', partition=1)
-        #  TP(topic='foo', partition=2)
-        #  TP(topic='foo', partition=3)
-        #
-        # If there are 100 partitions for each topic,
-        # it will process 100 items in the first topic, then 100 items
-        # in the other topic, but even worse if partition counts
-        # vary greatly, t1 has 1000 partitions and t2
-        # has 1 partition, then t2 will end up being starved most of the time.
-        #
-        # We solve this by going round-robin through each topic.
-        records, active_partitions = await self._wait_next_records(timeout)
-        if records is None or self.should_stop:
-            return
-
-        records_it = self.scheduler.iterate(records)
-        to_message = self._to_message  # localize
-        if self.flow_active:
-            for tp, record in records_it:
-                if not self.flow_active:
-                    break
-                if active_partitions is None or tp in active_partitions:
-                    highwater_mark = self.highwater(tp)
-                    self.app.monitor.track_tp_end_offset(tp, highwater_mark)
-                    # convert timestamp to seconds from int milliseconds.
-                    yield tp, to_message(tp, record)
+        pass
 
     async def _wait_next_records(
             self, timeout: float) -> Tuple[Optional[RecordMap],
                                            Optional[Set[TP]]]:
-        if not self.flow_active:
-            await self.wait(self.can_resume_flow)
-        # Implementation for the Fetcher service.
-
-        is_client_only = self.app.client_only
-
-        active_partitions: Optional[Set[TP]]
-        if is_client_only:
-            active_partitions = None
-        else:
-            active_partitions = self._get_active_partitions()
-
-        records: RecordMap = {}
-        if is_client_only or active_partitions:
-            # Fetch records only if active partitions to avoid the risk of
-            # fetching all partitions in the beginning when none of the
-            # partitions is paused/resumed.
-            records = await self._getmany(
-                active_partitions=active_partitions,
-                timeout=timeout,
-            )
-        else:
-            # We should still release to the event loop
-            await self.sleep(1)
-        return records, active_partitions
+        pass
 
     @abc.abstractmethod
     def _to_message(self, tp: TP, record: Any) -> ConsumerMessage:
@@ -703,12 +529,7 @@ class Consumer(Service, ConsumerT):
 
     def track_message(self, message: Message) -> None:
         """Track message and mark it as pending ack."""
-        # add to set of pending messages that must be acked for graceful
-        # shutdown.  This is called by transport.Conductor,
-        # before delivering messages to streams.
-        self._unacked_messages.add(message)
-        # call sensors
-        self._on_message_in(message.tp, message.offset, message)
+        pass
 
     def ack(self, message: Message) -> bool:
         """Mark message as being acknowledged by stream."""
@@ -734,83 +555,35 @@ class Consumer(Service, ConsumerT):
 
     async def _wait_for_ack(self, timeout: float) -> None:
         # arm future so that `ack()` can wake us up
-        self._waiting_for_ack = asyncio.Future(loop=self.loop)
-        try:
-            # wait for `ack()` to wake us up
-            await asyncio.wait_for(
-                self._waiting_for_ack, loop=self.loop, timeout=1)
-        except (asyncio.TimeoutError,
-                asyncio.CancelledError):  # pragma: no cover
-            pass
-        finally:
-            self._waiting_for_ack = None
+        pass
 
     @Service.transitions_to(CONSUMER_WAIT_EMPTY)
     async def wait_empty(self) -> None:
         """Wait for all messages that started processing to be acked."""
-        wait_count = 0
-        T = traced_from_parent_span()
-        while not self.should_stop and self._unacked_messages:
-            wait_count += 1
-            if not wait_count % 10:  # pragma: no cover
-                remaining = [(m.refcount, m) for m in self._unacked_messages]
-                self.log.warning('wait_empty: Waiting for tasks %r', remaining)
-                self.log.info(
-                    'Agent tracebacks:\n%s',
-                    self.app.agents.human_tracebacks(),
-                )
-            self.log.dev('STILL WAITING FOR ALL STREAMS TO FINISH')
-            self.log.dev('WAITING FOR %r EVENTS', len(self._unacked_messages))
-            gc.collect()
-            await T(self.commit)()
-            if not self._unacked_messages:
-                break
-            await T(self._wait_for_ack)(timeout=1)
-            self._clean_unacked_messages()
-
-        self.log.dev('COMMITTING AGAIN AFTER STREAMS DONE')
-        await T(self.commit_and_end_transactions)()
+        pass
 
     def _clean_unacked_messages(self) -> None:
         # remove actually acked messages from weakset.
-        self._unacked_messages -= {
-            message for message in self._unacked_messages
-            if message.acked
-        }
+        pass
 
     async def commit_and_end_transactions(self) -> None:
         """Commit all safe offsets and end transaction."""
-        await self.commit(start_new_transaction=False)
+        pass
 
     async def on_stop(self) -> None:
         """Call when consumer is stopping."""
-        if self.app.conf.stream_wait_empty:
-            await self.wait_empty()
-        else:
-            await self.commit_and_end_transactions()
+        pass
 
     @Service.task
     async def _commit_handler(self) -> None:
-        interval = self.commit_interval
-
-        await self.sleep(interval)
-        async for sleep_time in self.itertimer(interval, name='commit'):
-            await self.commit()
+        pass
 
     @Service.task
     async def _commit_livelock_detector(self) -> None:  # pragma: no cover
-        interval: float = self.commit_interval * 2.5
-        await self.sleep(interval)
-        async for sleep_time in self.itertimer(interval, name='livelock'):
-            if not self.app.rebalancing:
-                await self.verify_all_partitions_active()
+        pass
 
     async def verify_all_partitions_active(self) -> None:
-        now = monotonic()
-        for tp in self.assignment():
-            await self.sleep(0)
-            if not self.should_stop:
-                self.verify_event_path(now, tp)
+        pass
 
     def verify_event_path(self, now: float, tp: TP) -> None:
         ...
@@ -825,199 +598,52 @@ class Consumer(Service, ConsumerT):
         Arguments:
             topics: Set containing topics and/or TopicPartitions to commit.
         """
-        if self.app.client_only:
-            # client only cannot commit as consumer does not have group_id
-            return False
-        if await self.maybe_wait_for_commit_to_finish():
-            # original commit finished, return False as we did not commit
-            return False
-
-        self._commit_fut = asyncio.Future(loop=self.loop)
-        try:
-            return await self.force_commit(
-                topics,
-                start_new_transaction=start_new_transaction,
-            )
-        finally:
-            # set commit_fut to None so that next call will commit.
-            fut, self._commit_fut = self._commit_fut, None
-            # notify followers that the commit is done.
-            notify(fut)
+        pass
 
     async def maybe_wait_for_commit_to_finish(self) -> bool:
         """Wait for any existing commit operation to finish."""
-        # Only one coroutine allowed to commit at a time,
-        # and other coroutines should wait for the original commit to finish
-        # then do nothing.
-        if self._commit_fut is not None:
-            # something is already committing so wait for that future.
-            try:
-                await self._commit_fut
-            except asyncio.CancelledError:
-                # if future is cancelled we have to start new commit
-                pass
-            else:
-                return True
-        return False
+        pass
 
     @Service.transitions_to(CONSUMER_COMMITTING)
     async def force_commit(self,
                            topics: TPorTopicSet = None,
                            start_new_transaction: bool = True) -> bool:
         """Force offset commit."""
-        sensor_state = self.app.sensors.on_commit_initiated(self)
-
-        # Go over the ack list in each topic/partition
-        commit_tps = list(self._filter_tps_with_pending_acks(topics))
-        did_commit = await self._commit_tps(
-            commit_tps, start_new_transaction=start_new_transaction)
-
-        self.app.sensors.on_commit_completed(self, sensor_state)
-        return did_commit
+        pass
 
     async def _commit_tps(self,
                           tps: Iterable[TP],
                           start_new_transaction: bool) -> bool:
-        commit_offsets = self._filter_committable_offsets(tps)
-        if commit_offsets:
-            try:
-                # send all messages attached to the new offset
-                await self._handle_attached(commit_offsets)
-            except ProducerSendError as exc:
-                await self.crash(exc)
-            else:
-                return await self._commit_offsets(
-                    commit_offsets,
-                    start_new_transaction=start_new_transaction)
-        return False
+        pass
 
     def _filter_committable_offsets(self, tps: Iterable[TP]) -> Dict[TP, int]:
-        commit_offsets = {}
-        for tp in tps:
-            # Find the latest offset we can commit in this tp
-            offset = self._new_offset(tp)
-            # check if we can commit to this offset
-            if offset is not None and self._should_commit(tp, offset):
-                commit_offsets[tp] = offset
-        return commit_offsets
+        pass
 
     async def _handle_attached(self, commit_offsets: Mapping[TP, int]) -> None:
-        for tp, offset in commit_offsets.items():
-            app = cast(_App, self.app)
-            attachments = app._attachments
-            producer = app.producer
-            # Start publishing the messages and return a list of pending
-            # futures.
-            pending = await attachments.publish_for_tp_offset(tp, offset)
-            # then we wait for either
-            #  1) all the attached messages to be published, or
-            #  2) the producer crashing
-            #
-            # If the producer crashes we will not be able to send any messages
-            # and it only crashes when there's an irrecoverable error.
-            #
-            # If we cannot commit it means the events will be processed again,
-            # so conforms to at-least-once semantics.
-            if pending:
-                await cast(Service, producer).wait_many(pending)
+        pass
 
     async def _commit_offsets(self, offsets: Mapping[TP, int],
                               start_new_transaction: bool = True) -> bool:
-        table = terminal.logtable(
-            [(str(tp), str(offset))
-             for tp, offset in offsets.items()],
-            title='Commit Offsets',
-            headers=['TP', 'Offset'],
-        )
-        self.log.dev('COMMITTING OFFSETS:\n%s', table)
-        assignment = self.assignment()
-        committable_offsets: Dict[TP, int] = {}
-        revoked: Dict[TP, int] = {}
-        for tp, offset in offsets.items():
-            if tp in assignment:
-                committable_offsets[tp] = offset
-            else:
-                revoked[tp] = offset
-        if revoked:
-            self.log.info(
-                'Discarded commit for revoked partitions that '
-                'will be eventually processed again: %r',
-                revoked,
-            )
-        if not committable_offsets:
-            return False
-        with flight_recorder(self.log, timeout=300.0) as on_timeout:
-            did_commit = False
-            on_timeout.info('+consumer.commit()')
-            if self.in_transaction:
-                did_commit = await self.transactions.commit(
-                    committable_offsets,
-                    start_new_transaction=start_new_transaction,
-                )
-            else:
-                did_commit = await self._commit(committable_offsets)
-            on_timeout.info('-consumer.commit()')
-            if did_commit:
-                on_timeout.info('+tables.on_commit')
-                self.app.tables.on_commit(committable_offsets)
-                on_timeout.info('-tables.on_commit')
-        self._committed_offset.update(committable_offsets)
-        self.app.monitor.on_tp_commit(committable_offsets)
-        return did_commit
+        pass
 
     def _filter_tps_with_pending_acks(
             self, topics: TPorTopicSet = None) -> Iterator[TP]:
-        return (tp for tp in self._acked
-                if topics is None or tp in topics or tp.topic in topics)
+        pass
 
     def _should_commit(self, tp: TP, offset: int) -> bool:
-        committed = self._committed_offset[tp]
-        return committed is None or bool(offset) and offset > committed
+        pass
 
     def _new_offset(self, tp: TP) -> Optional[int]:
         # get the new offset for this tp, by going through
         # its list of acked messages.
-        acked = self._acked[tp]
-
-        # We iterate over it until we find a gap
-        # then return the offset before that.
-        # For example if acked[tp] is:
-        #   1 2 3 4 5 6 7 8 9
-        # the return value will be: 9
-        # If acked[tp] is:
-        #  34 35 36 40 41 42 43 44
-        #          ^--- gap
-        # the return value will be: 36
-        if acked:
-            max_offset = max(acked)
-            gap_for_tp = self._gap[tp]
-            if gap_for_tp:
-                gap_index = next((i for i, x in enumerate(gap_for_tp)
-                                  if x > max_offset), len(gap_for_tp))
-                gaps = gap_for_tp[:gap_index]
-                acked.extend(gaps)
-                gap_for_tp[:gap_index] = []
-            acked.sort()
-            # Note: acked is always kept sorted.
-            # find first list of consecutive numbers
-            batch = next(consecutive_numbers(acked))
-            # remove them from the list to clean up.
-            acked[:len(batch) - 1] = []
-            self._acked_index[tp].difference_update(batch)
-            # return the highest commit offset
-            return batch[-1]
-        return None
+        pass
 
     async def on_task_error(self, exc: BaseException) -> None:
         """Call when processing a message failed."""
-        await self.commit()
+        pass
 
     def _add_gap(self, tp: TP, offset_from: int, offset_to: int) -> None:
-        committed = self._committed_offset[tp]
-        gap_for_tp = self._gap[tp]
-        for offset in range(offset_from, offset_to):
-            if committed is None or offset > committed:
-                gap_for_tp.append(offset)
+        pass
 
     async def _drain_messages(
             self, fetcher: ServiceT) -> None:  # pragma: no cover
@@ -1025,75 +651,7 @@ class Consumer(Service, ConsumerT):
         # constantly read messages using Consumer.getmany.
         # It takes Fetcher as argument, because we must be able to
         # stop it using `await Fetcher.stop()`.
-        callback = self.callback
-        getmany = self.getmany
-        consumer_should_stop = cast(Service, self)._stopped.is_set
-        fetcher_should_stop = cast(Service, fetcher)._stopped.is_set
-
-        get_read_offset = self._read_offset.__getitem__
-        set_read_offset = self._read_offset.__setitem__
-        flag_consumer_fetching = CONSUMER_FETCHING
-        set_flag = self.diag.set_flag
-        unset_flag = self.diag.unset_flag
-        commit_every = self._commit_every
-        acks_enabled_for = self.app.topics.acks_enabled_for
-
-        yield_every = 100
-        num_since_yield = 0
-        sleep = asyncio.sleep
-
-        try:
-            while not (consumer_should_stop() or fetcher_should_stop()):
-                set_flag(flag_consumer_fetching)
-                ait = cast(AsyncIterator, getmany(timeout=1.0))
-
-                # Sleeping because sometimes getmany is called in a loop
-                # never releasing to the event loop
-                await self.sleep(0)
-                if not self.should_stop:
-                    async for tp, message in ait:
-                        num_since_yield += 1
-                        if num_since_yield > yield_every:
-                            await sleep(0)
-                            num_since_yield = 0
-
-                        offset = message.offset
-                        r_offset = get_read_offset(tp)
-                        if r_offset is None or offset > r_offset:
-                            gap = offset - (r_offset or 0)
-                            # We have a gap in income messages
-                            if gap > 1 and r_offset:
-                                acks_enabled = acks_enabled_for(message.topic)
-                                if acks_enabled:
-                                    self._add_gap(tp, r_offset + 1, offset)
-                            if commit_every is not None:
-                                if self._n_acked >= commit_every:
-                                    self._n_acked = 0
-                                    await self.commit()
-                            await callback(message)
-                            set_read_offset(tp, offset)
-                        else:
-                            self.log.dev('DROPPED MESSAGE ROFF %r: k=%r v=%r',
-                                         offset, message.key, message.value)
-                    unset_flag(flag_consumer_fetching)
-
-        except self.consumer_stopped_errors:
-            if self.transport.app.should_stop:
-                # we're already stopping so ignore
-                self.log.info('Broker stopped consumer, shutting down...')
-                return
-            raise
-        except asyncio.CancelledError:
-            if self.transport.app.should_stop:
-                # we're already stopping so ignore
-                self.log.info('Consumer shutting down for user cancel.')
-                return
-            raise
-        except Exception as exc:
-            self.log.exception('Drain messages raised: %r', exc)
-            raise
-        finally:
-            unset_flag(flag_consumer_fetching)
+        pass
 
     def close(self) -> None:
         """Close consumer for graceful shutdown."""
@@ -1102,7 +660,7 @@ class Consumer(Service, ConsumerT):
     @property
     def unacked(self) -> Set[Message]:
         """Return the set of currently unacknowledged messages."""
-        return cast(Set[Message], self._unacked_messages)
+        pass
 
 
 class ConsumerThread(QueueServiceThread):
@@ -1208,8 +766,7 @@ class ConsumerThread(QueueServiceThread):
     async def on_partitions_revoked(
             self, revoked: Set[TP]) -> None:
         """Call on rebalance when partitions are being revoked."""
-        await self.consumer.threadsafe_partitions_revoked(
-            self.thread_loop, revoked)
+        pass
 
     async def on_partitions_assigned(
             self, assigned: Set[TP]) -> None:
@@ -1257,13 +814,7 @@ class ThreadDelegateConsumer(Consumer):
             receiver_loop: asyncio.AbstractEventLoop,
             revoked: Set[TP]) -> None:
         """Call rebalancing callback in a thread-safe manner."""
-        promise = await self._method_queue.call(
-            receiver_loop.create_future(),
-            self.on_partitions_revoked,
-            revoked,
-        )
-        # wait for main-thread to finish processing request
-        await promise
+        pass
 
     async def threadsafe_partitions_assigned(
             self,
@@ -1281,15 +832,15 @@ class ThreadDelegateConsumer(Consumer):
     async def _getmany(self,
                        active_partitions: Optional[Set[TP]],
                        timeout: float) -> RecordMap:
-        return await self._thread.getmany(active_partitions, timeout)
+        pass
 
     async def subscribe(self, topics: Iterable[str]) -> None:
         """Reset subscription (requires rebalance)."""
-        await self._thread.subscribe(topics=topics)
+        pass
 
     async def seek_to_committed(self) -> Mapping[TP, int]:
         """Seek all partitions to the committed offset."""
-        return await self._thread.seek_to_committed()
+        pass
 
     async def position(self, tp: TP) -> Optional[int]:
         """Return the current position for partition."""
@@ -1297,10 +848,10 @@ class ThreadDelegateConsumer(Consumer):
 
     async def seek_wait(self, partitions: Mapping[TP, int]) -> None:
         """Seek partitions to specific offsets and wait."""
-        return await self._thread.seek_wait(partitions)
+        pass
 
     async def _seek(self, partition: TP, offset: int) -> None:
-        self._thread.seek(partition, offset)
+        pass
 
     def assignment(self) -> Set[TP]:
         """Return the current assignment."""
@@ -1312,22 +863,22 @@ class ThreadDelegateConsumer(Consumer):
 
     def topic_partitions(self, topic: str) -> Optional[int]:
         """Return the number of partitions configured for topic by name."""
-        return self._thread.topic_partitions(topic)
+        pass
 
     async def earliest_offsets(self, *partitions: TP) -> Mapping[TP, int]:
         """Return the earliest offsets for a list of partitions."""
-        return await self._thread.earliest_offsets(*partitions)
+        pass
 
     async def highwaters(self, *partitions: TP) -> Mapping[TP, int]:
         """Return the last offset for a list of partitions."""
-        return await self._thread.highwaters(*partitions)
+        pass
 
     async def _commit(self, offsets: Mapping[TP, int]) -> bool:
-        return await self._thread.commit(offsets)
+        pass
 
     def close(self) -> None:
         """Close consumer for graceful shutdown."""
-        self._thread.close()
+        pass
 
     def key_partition(self,
                       topic: str,
@@ -1337,4 +888,4 @@ class ThreadDelegateConsumer(Consumer):
         return self._thread.key_partition(topic, key, partition=partition)
 
     def verify_recovery_event_path(self, now: float, tp: TP) -> None:
-        return self._thread.verify_recovery_event_path(now, tp)
+        pass

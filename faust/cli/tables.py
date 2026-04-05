@@ -11,10 +11,4 @@ class tables(AppCommand):
 
     async def run(self) -> None:
         """Dump list of application tables to terminal."""
-        self.say(
-            self.tabulate(
-                [(self.bold(table.name),
-                  self.dark(table.help or DEFAULT_TABLE_HELP))
-                 for table in self.app.tables.values()],
-                title=self.title,
-                headers=['name', 'help']))
+        pass

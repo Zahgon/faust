@@ -43,11 +43,7 @@ def noop_span() -> opentracing.Span:
 def finish_span(span: Optional[opentracing.Span], *,
                 error: BaseException = None) -> None:
     """Finish span, and optionally set error tag."""
-    if span is not None:
-        if error:
-            span.__exit__(type(error), error, error.__traceback__)
-        else:
-            span.finish()
+    pass
 
 
 def operation_name_from_fun(fun: Any) -> str:
@@ -69,35 +65,13 @@ def traced_from_parent_span(parent_span: opentracing.Span = None,
                             **extra_context: Any) -> Callable:
     """Decorate function to be traced from parent span."""
     def _wrapper(fun: Callable, **more_context: Any) -> Callable:
-        operation_name = operation_name_from_fun(fun)
-
-        @wraps(fun)
-        def _inner(*args: Any, **kwargs: Any) -> Any:
-            parent = parent_span
-            if parent is None:
-                parent = current_span()
-            if parent is not None:
-                child = parent.tracer.start_span(
-                    operation_name=operation_name,
-                    child_of=parent,
-                    tags={**extra_context, **more_context},
-                )
-                if callback is not None:
-                    callback(child)
-                on_exit = (_restore_span, (parent, child))
-                set_current_span(child)
-                return call_with_trace(
-                    child, fun, on_exit, *args, **kwargs)
-            return fun(*args, **kwargs)
-        return _inner
+        pass
     return _wrapper
 
 
 def _restore_span(span: opentracing.Span,
                   expected_current_span: opentracing.Span) -> None:
-    current = current_span()
-    assert current is expected_current_span
-    set_current_span(span)
+    pass
 
 
 def call_with_trace(span: opentracing.Span,

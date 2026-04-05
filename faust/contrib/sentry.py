@@ -67,20 +67,7 @@ def _build_sentry_handler() -> Type[_SentryHandler]:
             return False
 
         def emit(self, record: logging.LogRecord) -> None:
-            try:
-                self.format(record)
-
-                if self.can_record(record):
-                    self._emit(record)
-                else:
-                    self.carp(record.message)
-            except Exception:
-                if self.client.raise_send_errors:
-                    raise
-                self.carp('Top level Sentry exception caught - failed '
-                          'creating log record')
-                self.carp(record.msg)
-                self.carp(traceback.format_exc())
+            pass
 
         def carp(self, obj: Any) -> None:
             print(_logging.to_string(obj), file=sys.__stderr__)

@@ -212,20 +212,7 @@ class Topic(SerializedChannel, TopicT):
             This method can be used by non-`async def` functions
             to produce messages.
         """
-        fut = self.as_future_message(
-            key=key,
-            value=value,
-            partition=partition,
-            timestamp=timestamp,
-            headers=headers,
-            schema=schema,
-            key_serializer=key_serializer,
-            value_serializer=value_serializer,
-            callback=callback,
-            eager_partitioning=eager_partitioning,
-        )
-        self.app.producer.send_soon(fut)
-        return fut
+        pass
 
     async def put(self, event: EventT) -> None:
         """Put event directly onto the underlying queue of this topic.
@@ -262,14 +249,12 @@ class Topic(SerializedChannel, TopicT):
     @property
     def pattern(self) -> Optional[Pattern]:
         """Regular expression used by this topic (if any)."""
-        return self._pattern
+        pass
 
     @pattern.setter
     def pattern(self, pattern: Union[str, Pattern]) -> None:
         """Set the regular expression pattern this topic subscribes to."""
-        if pattern and self.topics:
-            raise TypeError('Cannot specify both topics and pattern')
-        self._pattern = re.compile(pattern) if pattern else None
+        pass
 
     @property
     def partitions(self) -> Optional[int]:
@@ -289,7 +274,7 @@ class Topic(SerializedChannel, TopicT):
             Always make sure your topics have the correct
             number of partitions.
         """
-        return self._partitions
+        pass
 
     @partitions.setter
     def partitions(self, partitions: int) -> None:
@@ -297,9 +282,7 @@ class Topic(SerializedChannel, TopicT):
 
         Only used for internal topics, see :attr:`partitions`.
         """
-        if partitions == 0:
-            raise ValueError('Topic cannot have zero partitions')
-        self._partitions = partitions
+        pass
 
     def derive(self, **kwargs: Any) -> ChannelT:
         """Create topic derived from the configuration of this topic.
@@ -310,7 +293,7 @@ class Topic(SerializedChannel, TopicT):
         See Also:
             :meth:`derive_topic`: for a list of supported keyword arguments.
         """
-        return self.derive_topic(**kwargs)
+        pass
 
     def derive_topic(self,
                      *,
@@ -438,16 +421,7 @@ class Topic(SerializedChannel, TopicT):
                       message: FutureMessage,
                       producer: ProducerT,
                       state: Any) -> None:
-        try:
-            res: RecordMetadata = fut.result()
-        except Exception as exc:
-            message.set_exception(exc)
-            self.app.sensors.on_send_error(producer, exc, state)
-        else:
-            message.set_result(res)
-            if message.message.callback:
-                message.message.callback(message)
-            self.app.sensors.on_send_completed(producer, state, res)
+        pass
 
     @stampede
     async def maybe_declare(self) -> None:

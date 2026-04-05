@@ -165,8 +165,7 @@ class ReplyConsumer(Service):
 
     async def on_start(self) -> None:
         """Call when reply consumer starts."""
-        if self.app.conf.reply_create_topic:
-            await self._start_fetcher(self.app.conf.reply_to)
+        pass
 
     async def add(self, correlation_id: str, promise: ReplyPromise) -> None:
         """Register promise to start tracking when it arrives."""

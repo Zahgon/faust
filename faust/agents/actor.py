@@ -38,24 +38,19 @@ class Actor(ActorT, Service):
 
     async def on_start(self) -> None:
         """Call when actor is starting."""
-        assert self.actor_task
-        self.add_future(self.actor_task)
+        pass
 
     async def on_stop(self) -> None:
         """Call when actor is being stopped."""
-        self.cancel()
+        pass
 
     async def on_isolated_partition_revoked(self, tp: TP) -> None:
         """Call when an isolated partition is being revoked."""
-        self.log.debug('Cancelling current task in actor for partition %r', tp)
-        self.cancel()
-        self.log.info('Stopping actor for revoked partition %r...', tp)
-        await self.stop()
-        self.log.debug('Actor for revoked partition %r stopped')
+        pass
 
     async def on_isolated_partition_assigned(self, tp: TP) -> None:
         """Call when an isolated partition is being assigned."""
-        self.log.dev('Actor was assigned to %r', tp)
+        pass
 
     def cancel(self) -> None:
         """Tell actor to stop reading from the stream."""
@@ -83,7 +78,7 @@ class AsyncIterableActor(AsyncIterableActorT, Actor):
         return self.it.__aiter__()
 
     def traceback(self) -> str:
-        return format_agen_stack(cast(AsyncGenerator, self.it))
+        pass
 
 
 class AwaitableActor(AwaitableActorT, Actor):
@@ -93,4 +88,4 @@ class AwaitableActor(AwaitableActorT, Actor):
         return self.it.__await__()
 
     def traceback(self) -> str:
-        return format_coro_stack(cast(Coroutine, self.it))
+        pass

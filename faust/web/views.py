@@ -78,31 +78,13 @@ class View:
 
     async def dispatch(self, request: Any) -> Any:
         """Dispatch the request and perform any callbacks/cleanup."""
-        app = self.app
-        sensors = app.sensors
-        method = request.method.lower()
-        kwargs = request.match_info or {}  # XXX Aiohttp specific
-
-        # we cast here since some subclasses take extra parameters
-        # from the URL route (match_info).
-        method = cast(Callable[..., Awaitable[Response]], self.methods[method])
-
-        sensor_state = sensors.on_web_request_start(app, request, view=self)
-        response: Optional[Response] = None
-        try:
-            response = await method(cast(Request, request), **kwargs)
-        except WebError as exc:
-            response = await self.on_request_error(request, exc)
-        finally:
-            sensors.on_web_request_end(
-                app, request, response, sensor_state, view=self)
-        return response
+        pass
 
     async def on_request_error(self,
                                request: Request,
                                exc: WebError) -> Response:
         """Call when a request raises an exception."""
-        return self.error(exc.code, exc.detail, **exc.extra_context)
+        pass
 
     def path_for(self, view_name: str, **kwargs: Any) -> str:
         """Return the URL path for view by name.
@@ -131,7 +113,7 @@ class View:
     @no_type_check
     async def head(self, request: Request, **kwargs: Any) -> Any:
         """Override ``head`` to define the HTTP HEAD handler."""
-        return await self.get(request, **kwargs)
+        pass
 
     @no_type_check  # subclasses change signature based on route match_info
     async def get(self, request: Request, **kwargs: Any) -> Any:
@@ -188,13 +170,7 @@ class View:
              reason: str = None,
              headers: MutableMapping = None) -> Response:
         """Create HTML response from string, ``text/html`` content-type."""
-        return self.web.html(
-            value,
-            content_type=content_type,
-            status=status,
-            reason=reason,
-            headers=headers,
-        )
+        pass
 
     def json(self, value: Any, *,
              content_type: str = None,
@@ -258,24 +234,18 @@ class View:
 
         Deprecated: Use ``raise self.NotFound()`` instead.
         """
-        return self.error(404, reason, **kwargs)
+        pass
 
     def error(self, status: int, reason: str, **kwargs: Any) -> Response:
         """Create error JSON response."""
-        return self.json({'error': reason, **kwargs}, status=status)
+        pass
 
 
 def takes_model(Model: Type[ModelT]) -> ViewDecorator:
     """Decorate view function to return model data."""
     def _decorate_view(fun: ViewHandlerFun) -> ViewHandlerFun:
         @wraps(fun)
-        async def _inner(view: View, request: Request,
-                         *args: Any, **kwargs: Any) -> Response:
-            data: bytes = await view.read_request_content(request)
-            obj: ModelT = Model.loads(data, serializer='json')
-            return await fun(  # type: ignore
-                view, request, obj, *args, **kwargs)
-        return _inner
+        pass
     return _decorate_view
 
 
@@ -286,11 +256,5 @@ def gives_model(Model: Type[ModelT]) -> ViewDecorator:
     """
     def _decorate_view(fun: ViewHandlerFun) -> ViewHandlerFun:
         @wraps(fun)
-        async def _inner(view: View, request: Request,
-                         *args: Any, **kwargs: Any) -> Response:
-            response: Any
-            response = await fun(  # type: ignore
-                view, request, *args, **kwargs)
-            return view.json(response)
-        return _inner
+        pass
     return _decorate_view

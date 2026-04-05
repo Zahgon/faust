@@ -31,7 +31,7 @@ class State(Enum):
 
     def is_ok(self) -> bool:
         """Return :const:`True` if this is considered an OK state."""
-        return self in OK_STATES
+        pass
 
 
 OK_STATES = frozenset({State.INIT, State.PASS, State.SKIP})
@@ -59,23 +59,7 @@ class TestExecution(Record, isodates=True):
     @classmethod
     def from_headers(cls, headers: Mapping) -> Optional['TestExecution']:
         """Create instance from mapping of HTTP/Kafka headers."""
-        try:
-            test_id = want_str(headers[HEADER_TEST_ID])
-        except KeyError:
-            return None
-        else:
-            test_name = headers[HEADER_TEST_NAME]
-            timestamp = headers[HEADER_TEST_TIMESTAMP]
-            expires = headers[HEADER_TEST_EXPIRES]
-
-            return cls(
-                id=test_id,
-                case_name=want_str(test_name),
-                timestamp=parse_iso8601(want_str(timestamp)),
-                expires=parse_iso8601(want_str(expires)),
-                test_args=(),
-                test_kwargs={},
-            )
+        pass
 
     def as_headers(self) -> Mapping:
         """Return test metadata as mapping of HTTP/Kafka headers."""
@@ -89,18 +73,15 @@ class TestExecution(Record, isodates=True):
     @cached_property
     def ident(self) -> str:
         """Return long identifier for this test used in logs."""
-        return self._build_ident(self.case_name, self.id)
+        pass
 
     @cached_property
     def shortident(self) -> str:
         """Return short identifier for this test used in logs."""
-        return self._build_ident(
-            self.short_case_name,
-            abbr(self.id, max=15, suffix='[...]'),
-        )
+        pass
 
     def _build_ident(self, case_name: str, id: str) -> str:
-        return f'{case_name}:{id}'
+        pass
 
     def _now(self) -> datetime:
         return datetime.utcnow().astimezone(timezone.utc)
@@ -108,25 +89,22 @@ class TestExecution(Record, isodates=True):
     @cached_property
     def human_date(self) -> str:
         """Return human-readable description of test timestamp."""
-        if self.was_issued_today:
-            return f'''Today {self.timestamp.strftime('%H:%M:%S')}'''
-        else:
-            return str(self.timestamp)
+        pass
 
     @cached_property
     def was_issued_today(self) -> bool:
         """Return :const:`True` if test was issued on todays date."""
-        return self.timestamp.date() == self._now().date()
+        pass
 
     @cached_property
     def is_expired(self) -> bool:
         """Return :const:`True` if this test already expired."""
-        return self._now() >= self.expires
+        pass
 
     @cached_property
     def short_case_name(self) -> str:
         """Return abbreviated case name."""
-        return self.case_name.split('.')[-1]
+        pass
 
 
 class TestReport(Record):

@@ -28,8 +28,7 @@ def consecutive_numbers(it: Iterable[int]) -> Iterator[Sequence[int]]:
     Notes:
         See https://docs.python.org/2.6/library/itertools.html#examples
     """
-    for _, g in groupby(enumerate(it), lambda a: a[0] - a[1]):
-        yield [a[1] for a in g]
+    pass
 
 
 def deque_prune(items: Deque[T], max: int = None) -> Optional[T]:
@@ -73,6 +72,6 @@ def translate(table: Mapping, s: str) -> str:
     """
 
     def on_reduce(acc: str, kv: Tuple[str, str]) -> str:
-        return acc.replace(kv[0], kv[1])  # table key/value
+        pass
 
     return reduce(on_reduce, table.items(), s)

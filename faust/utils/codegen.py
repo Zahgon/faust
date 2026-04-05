@@ -31,19 +31,7 @@ def Function(name: str,
              return_type: Any = MISSING,
              argsep: str = ', ') -> Callable:
     """Compile function code object from args and body."""
-    return build_function(
-        name=name,
-        source=build_function_source(
-            name=name,
-            args=args,
-            body=body,
-            return_type=return_type,
-            argsep=argsep,
-        ),
-        return_type=return_type,
-        globals=globals,
-        locals=locals,
-    )
+    pass
 
 
 def build_closure_source(name: str,
@@ -99,13 +87,7 @@ def build_function(name: str, source: str,
                    globals: Dict[str, Any] = None,
                    locals: Dict[str, Any] = None) -> Callable:
     """Generate function from Python from source code string."""
-    assert locals is not None
-    if return_type is not MISSING:
-        locals['_return_type'] = return_type
-    exec(source, globals, locals)
-    obj = locals[name]
-    obj.__sourcecode__ = source
-    return cast(Callable, obj)
+    pass
 
 
 def build_function_source(name: str,
@@ -133,53 +115,49 @@ def Method(name: str,
            body: List[str],
            **kwargs: Any) -> Callable:
     """Generate Python method."""
-    return Function(name, ['self'] + args, body, **kwargs)
+    pass
 
 
 def InitMethod(args: List[str],
                body: List[str],
                **kwargs: Any) -> Callable[[], None]:
     """Generate ``__init__`` method."""
-    return Method('__init__', args, body, return_type='None', **kwargs)
+    pass
 
 
 def HashMethod(attrs: List[str], **kwargs: Any) -> Callable[[], None]:
     """Generate ``__hash__`` method."""
-    self_tuple = obj_attrs_tuple('self', attrs)
-    return Method('__hash__',
-                  [],
-                  [f'return hash({self_tuple})'],
-                  **kwargs)
+    pass
 
 
 def EqMethod(fields: List[str], **kwargs: Any) -> Callable[[], None]:
     """Generate ``__eq__`` method."""
-    return CompareMethod(name='__eq__', op='==', fields=fields, **kwargs)
+    pass
 
 
 def NeMethod(fields: List[str], **kwargs: Any) -> Callable[[], None]:
     """Generate ``__ne__`` method."""
-    return CompareMethod(name='__ne__', op='!=', fields=fields, **kwargs)
+    pass
 
 
 def GeMethod(fields: List[str], **kwargs: Any) -> Callable[[], None]:
     """Generate ``__ge__`` method."""
-    return CompareMethod(name='__ge__', op='>=', fields=fields, **kwargs)
+    pass
 
 
 def GtMethod(fields: List[str], **kwargs: Any) -> Callable[[], None]:
     """Generate ``__gt__`` method."""
-    return CompareMethod(name='__gt__', op='>', fields=fields, **kwargs)
+    pass
 
 
 def LeMethod(fields: List[str], **kwargs: Any) -> Callable[[], None]:
     """Generate ``__le__`` method."""
-    return CompareMethod(name='__le__', op='<=', fields=fields, **kwargs)
+    pass
 
 
 def LtMethod(fields: List[str], **kwargs: Any) -> Callable[[], None]:
     """Generate ``__lt__`` method."""
-    return CompareMethod(name='__lt__', op='<', fields=fields, **kwargs)
+    pass
 
 
 def CompareMethod(name: str,
@@ -210,14 +188,7 @@ def CompareMethod(name: str,
                    return (self.x,self.y) == (other.x,other.y)
                return NotImplemented
     """
-    self_tuple = obj_attrs_tuple('self', fields)
-    other_tuple = obj_attrs_tuple('other', fields)
-    return Method(name,
-                  ['other'],
-                  ['if other.__class__ is self.__class__:',
-                   f' return {self_tuple}{op}{other_tuple}',
-                   'return NotImplemented'],
-                  **kwargs)
+    pass
 
 
 def obj_attrs_tuple(obj_name: str, attrs: List[str]) -> str:
@@ -226,15 +197,13 @@ def obj_attrs_tuple(obj_name: str, attrs: List[str]) -> str:
     If attrs is ``['x', 'y']`` and ``obj_name`` is 'self',
     returns ``(self.x,self.y)``.
     """
-    if not attrs:
-        return '()'
-    return f'({",".join([f"{obj_name}.{f}" for f in attrs])},)'
+    pass
 
 
 def reprkwargs(kwargs: Mapping[str, Any], *,
                sep: str = ', ',
                fmt: str = '{0}={1}') -> str:
-    return sep.join(fmt.format(k, repr(v)) for k, v in kwargs.items())
+    pass
 
 
 def reprcall(name: str,
@@ -242,8 +211,4 @@ def reprcall(name: str,
              kwargs: Mapping[str, Any] = {},  # noqa: B006
              *,
              sep: str = ', ') -> str:
-    return '{0}({1}{2}{3})'.format(
-        name, sep.join(map(repr, args or ())),
-        (args and kwargs) and sep or '',
-        reprkwargs(kwargs, sep=sep),
-    )
+    pass

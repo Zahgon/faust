@@ -66,8 +66,7 @@ class Spinner:
 
     def reset(self) -> None:
         """Reset state or allow restart."""
-        self.stopped = False
-        self.count = 0
+        pass
 
     def write(self, s: str) -> None:
         """Write spinner character to terminal."""
@@ -86,14 +85,11 @@ class Spinner:
 
     def finish(self) -> None:
         """Finish spinner and reset terminal."""
-        print(f'{self.bell * (self.width + 1)}', end='', file=self.file)
-        self._finish(self.file)
-        self.stop()
+        pass
 
     @classmethod
     def _finish(cls, file: IO, *, at_exit: bool = False) -> None:
-        print(cls.cursor_show, end='', file=file)
-        file.flush()
+        pass
 
 
 class SpinnerHandler(logging.Handler):
@@ -109,6 +105,4 @@ class SpinnerHandler(logging.Handler):
 
     def emit(self, _record: logging.LogRecord) -> None:
         """Emit the next spinner character."""
-        # the spinner is only in effect with WARN level and below.
-        if self.spinner and not self.spinner.stopped:
-            self.spinner.update()
+        pass

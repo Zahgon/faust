@@ -24,10 +24,8 @@ class reset(AppCommand):
 
     async def run(self) -> None:
         """Execute command."""
-        await self.reset_tables()
+        pass
 
     async def reset_tables(self) -> None:
         """Reset local state for all tables."""
-        for table in self.app.tables.values():
-            self.say(f'Removing database for table {table.name}...')
-            table.reset_state()
+        pass

@@ -28,7 +28,7 @@ class Sensor(SensorT, Service):
     def on_stream_event_in(self, tp: TP, offset: int, stream: StreamT,
                            event: EventT) -> Optional[Dict]:
         """Message sent to a stream as an event."""
-        return None
+        pass
 
     def on_stream_event_out(self, tp: TP, offset: int, stream: StreamT,
                             event: EventT, state: Dict = None) -> None:
@@ -98,7 +98,7 @@ class Sensor(SensorT, Service):
     def on_assignment_start(self,
                             assignor: PartitionAssignorT) -> Dict:
         """Partition assignor is starting to assign partitions."""
-        return {'time_start': monotonic()}
+        pass
 
     def on_assignment_error(self,
                             assignor: PartitionAssignorT,
@@ -115,7 +115,7 @@ class Sensor(SensorT, Service):
 
     def on_rebalance_start(self, app: AppT) -> Dict:
         """Cluster rebalance in progress."""
-        return {'time_start': monotonic()}
+        pass
 
     def on_rebalance_return(self, app: AppT, state: Dict) -> None:
         """Consumer replied assignment is done to broker."""
@@ -128,7 +128,7 @@ class Sensor(SensorT, Service):
     def on_web_request_start(self, app: AppT, request: web.Request, *,
                              view: web.View = None) -> Dict:
         """Web server started working on request."""
-        return {'time_start': monotonic()}
+        pass
 
     def on_web_request_end(self,
                            app: AppT,
@@ -162,31 +162,24 @@ class SensorDelegate(SensorDelegateT):
 
     def remove(self, sensor: SensorT) -> None:
         """Remove sensor."""
-        self._sensors.remove(sensor)
+        pass
 
     def __iter__(self) -> Iterator:
         return iter(self._sensors)
 
     def on_message_in(self, tp: TP, offset: int, message: Message) -> None:
         """Call before message is delegated to streams."""
-        for sensor in self._sensors:
-            sensor.on_message_in(tp, offset, message)
+        pass
 
     def on_stream_event_in(self, tp: TP, offset: int, stream: StreamT,
                            event: EventT) -> Optional[Dict]:
         """Call when stream starts processing an event."""
-        return {
-            sensor: sensor.on_stream_event_in(tp, offset, stream, event)
-            for sensor in self._sensors
-        }
+        pass
 
     def on_stream_event_out(self, tp: TP, offset: int, stream: StreamT,
                             event: EventT, state: Dict = None) -> None:
         """Call when stream is done processing an event."""
-        sensor_state = state or {}
-        for sensor in self._sensors:
-            sensor.on_stream_event_out(tp, offset, stream, event,
-                                       sensor_state.get(sensor))
+        pass
 
     def on_topic_buffer_full(self, tp: TP) -> None:
         """Call when conductor topic buffer is full and has to wait."""
@@ -198,38 +191,27 @@ class SensorDelegate(SensorDelegateT):
                        offset: int,
                        message: Message) -> None:
         """Call when message is fully acknowledged and can be committed."""
-        for sensor in self._sensors:
-            sensor.on_message_out(tp, offset, message)
+        pass
 
     def on_table_get(self, table: CollectionT, key: Any) -> None:
         """Call when value in table is retrieved."""
-        for sensor in self._sensors:
-            sensor.on_table_get(table, key)
+        pass
 
     def on_table_set(self, table: CollectionT, key: Any, value: Any) -> None:
         """Call when new value for key in table is set."""
-        for sensor in self._sensors:
-            sensor.on_table_set(table, key, value)
+        pass
 
     def on_table_del(self, table: CollectionT, key: Any) -> None:
         """Call when key in a table is deleted."""
-        for sensor in self._sensors:
-            sensor.on_table_del(table, key)
+        pass
 
     def on_commit_initiated(self, consumer: ConsumerT) -> Any:
         """Call when consumer commit offset operation starts."""
-        # This returns arbitrary state, so we return a map from sensor->state.
-        return {
-            sensor: sensor.on_commit_initiated(consumer)
-            for sensor in self._sensors
-        }
+        pass
 
     def on_commit_completed(self, consumer: ConsumerT, state: Any) -> None:
         """Call when consumer commit offset operation completed."""
-        # state is now a mapping from sensor->state, so
-        # make sure to correct the correct state to each sensor.
-        for sensor in self._sensors:
-            sensor.on_commit_completed(consumer, state[sensor])
+        pass
 
     def on_send_initiated(self, producer: ProducerT, topic: str,
                           message: PendingMessage,
@@ -254,38 +236,29 @@ class SensorDelegate(SensorDelegateT):
                       exc: BaseException,
                       state: Any) -> None:
         """Call when producer was unable to publish message."""
-        for sensor in self._sensors:
-            sensor.on_send_error(producer, exc, state[sensor])
+        pass
 
     def on_assignment_start(self,
                             assignor: PartitionAssignorT) -> Dict:
         """Partition assignor is starting to assign partitions."""
-        return {
-            sensor: sensor.on_assignment_start(assignor)
-            for sensor in self._sensors
-        }
+        pass
 
     def on_assignment_error(self,
                             assignor: PartitionAssignorT,
                             state: Dict,
                             exc: BaseException) -> None:
         """Partition assignor did not complete assignor due to error."""
-        for sensor in self._sensors:
-            sensor.on_assignment_error(assignor, state[sensor], exc)
+        pass
 
     def on_assignment_completed(self,
                                 assignor: PartitionAssignorT,
                                 state: Dict) -> None:
         """Partition assignor completed assignment."""
-        for sensor in self._sensors:
-            sensor.on_assignment_completed(assignor, state[sensor])
+        pass
 
     def on_rebalance_start(self, app: AppT) -> Dict:
         """Cluster rebalance in progress."""
-        return {
-            sensor: sensor.on_rebalance_start(app)
-            for sensor in self._sensors
-        }
+        pass
 
     def on_rebalance_return(self, app: AppT, state: Dict) -> None:
         """Consumer replied assignment is done to broker."""
@@ -294,17 +267,12 @@ class SensorDelegate(SensorDelegateT):
 
     def on_rebalance_end(self, app: AppT, state: Dict) -> None:
         """Cluster rebalance fully completed (including recovery)."""
-        for sensor in self._sensors:
-            sensor.on_rebalance_end(app, state[sensor])
+        pass
 
     def on_web_request_start(self, app: AppT, request: web.Request, *,
                              view: web.View = None) -> Dict:
         """Web server started working on request."""
-        return {
-            sensor: sensor.on_web_request_start(app, request,
-                                                view=view)
-            for sensor in self._sensors
-        }
+        pass
 
     def on_web_request_end(self,
                            app: AppT,
@@ -314,9 +282,7 @@ class SensorDelegate(SensorDelegateT):
                            *,
                            view: web.View = None) -> None:
         """Web server finished working on request."""
-        for sensor in self._sensors:
-            sensor.on_web_request_end(app, request, response, state[sensor],
-                                      view=view)
+        pass
 
     def __repr__(self) -> str:
         return f'<{type(self).__name__}: {self._sensors!r}>'

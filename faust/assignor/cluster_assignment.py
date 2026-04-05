@@ -32,22 +32,13 @@ class ClusterAssignment(Record,
 
     def topics(self) -> Set[str]:
         # All topics subscribed to in the cluster
-        return {topic for sub in self.subscriptions.values() for topic in sub}
+        pass
 
     def add_client(self, client: str, subscription: List[str],
                    metadata: ClientMetadata) -> None:
-        self.subscriptions[client] = list(subscription)
-        self.assignments[client] = metadata.assignment
+        pass
 
     def copartitioned_assignments(
             self, copartitioned_topics: Set[str]) -> CopartMapping:
         # We only pick clients that subscribe to all copartitioned topics
-        subscribed_clis = {
-            cli for cli, sub in self.subscriptions.items()
-            if copartitioned_topics.issubset(sub)
-        }
-        return {
-            cli: assignment.copartitioned_assignment(copartitioned_topics)
-            for cli, assignment in self.assignments.items()
-            if cli in subscribed_clis
-        }
+        pass

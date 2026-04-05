@@ -43,13 +43,7 @@ def table(data: TableDataT,
                      terminal, but not otherwise, which is why it's important
                      to pass the correct output file.
     """
-    if target is None:
-        target = sys.stdout
-    if tty is None:
-        tty = isatty(target)
-    if tty is None:
-        tty = False
-    return _get_best_table_type(tty)(data, title=title, **kwargs)
+    pass
 
 
 def logtable(data: TableDataT,
@@ -63,15 +57,11 @@ def logtable(data: TableDataT,
 
     Will use ANSI escape codes if the log file is a tty.
     """
-    if tty is None:
-        tty = logging.LOG_ISATTY
-    if headers:
-        data = [headers] + list(data)
-    return table(data, title=title, target=target, tty=tty, **kwargs).table
+    pass
 
 
 def _get_best_table_type(tty: bool) -> Type[Table]:
-    return SingleTable if tty else AsciiTable
+    pass
 
 
 def dict_as_ansitable(d: Mapping,
@@ -82,13 +72,4 @@ def dict_as_ansitable(d: Mapping,
                       sortkey: Callable[[Any], Any] = itemgetter(0),
                       target: IO = sys.stdout,
                       title: str = None) -> str:
-    header = [text.title(key), text.title(value)]
-    data = cast(Iterable[List[str]], d.items())
-    data = sorted(data, key=sortkey) if sort else list(data)
-    if sort:
-        data = sorted(data, key=sortkey)
-    return table(
-        [header] + list(data),
-        title=text.title(title) if title is not None else '',
-        target=target,
-    ).table
+    pass

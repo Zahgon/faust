@@ -64,39 +64,27 @@ class TableManager(Service, TableManagerT):
         Instead of writing the persisted offset to RocksDB when the message
         is sent, we write it to disk when the offset is committed.
         """
-        existing_entry = self._pending_persisted_offsets.get(tp)
-        if existing_entry is not None:
-            _, existing_offset = existing_entry
-            if offset < existing_offset:
-                return
-        self._pending_persisted_offsets[tp] = (store, offset)
+        pass
 
     def on_commit(self, offsets: MutableMapping[TP, int]) -> None:
         """Call when committing source topic partitions."""
-        # flush any pending persisted offsets added by
-        # persist_offset_on_commit
-        for tp in offsets:
-            self.on_commit_tp(tp)
+        pass
 
     def on_commit_tp(self, tp: TP) -> None:
         """Call when committing source topic partition used by this table."""
-        entry = self._pending_persisted_offsets.get(tp)
-        if entry is not None:
-            store, offset = entry
-            store.set_persisted_offset(tp, offset)
+        pass
 
     def on_rebalance_start(self) -> None:
         """Call when a new rebalancing operation starts."""
-        self.actives_ready = False
-        self.standbys_ready = False
+        pass
 
     def on_actives_ready(self) -> None:
         """Call when actives are fully up-to-date."""
-        self.actives_ready = True
+        pass
 
     def on_standbys_ready(self) -> None:
         """Call when standbys are fully up-to-date and ready for failover."""
-        self.standbys_ready = True
+        pass
 
     def __hash__(self) -> int:
         return object.__hash__(self)
@@ -104,26 +92,17 @@ class TableManager(Service, TableManagerT):
     @property
     def changelog_topics(self) -> Set[str]:
         """Return the set of known changelog topics."""
-        return set(self._changelogs.keys())
+        pass
 
     @property
     def changelog_queue(self) -> ThrowableQueue:
         """Queue used to buffer changelog events."""
-        if self._changelog_queue is None:
-            self._changelog_queue = self.app.FlowControlQueue(
-                maxsize=self.app.conf.stream_buffer_maxsize,
-                loop=self.loop,
-                clear_on_resume=True,
-            )
-        return self._changelog_queue
+        pass
 
     @property
     def recovery(self) -> Recovery:
         """Recovery service used by this table manager."""
-        if self._recovery is None:
-            self._recovery = Recovery(
-                self.app, self, beacon=self.beacon, loop=self.loop)
-        return self._recovery
+        pass
 
     def add(self, table: CollectionT) -> CollectionT:
         """Add table to be managed by this table manager."""
@@ -138,45 +117,21 @@ class TableManager(Service, TableManagerT):
 
     async def on_start(self) -> None:
         """Call when table manager is starting."""
-        await self.sleep(1.0)
-        if not self.should_stop:
-            await self._update_channels()
-            await self.recovery.start()
+        pass
 
     async def wait_until_tables_registered(self) -> None:
-        if not self.app.producer_only and not self.app.client_only:
-            await self.wait_for_stopped(self._tables_registered)
+        pass
 
     async def _update_channels(self) -> None:
-        self._tables_finalized.set()
-        for table in self.values():
-            await asyncio.sleep(0)
-            if table not in self._channels:
-                chan = table.changelog_topic.clone_using_queue(
-                    self.changelog_queue)
-                self.app.topics.add(chan)
-                await asyncio.sleep(0)
-                self._channels[table] = chan
-            await table.maybe_start()
-        self.app.consumer.pause_partitions({
-            tp for tp in self.app.consumer.assignment()
-            if tp.topic in self._changelogs
-        })
-        await asyncio.sleep(0)
-        self._tables_registered.set()
+        pass
 
     async def on_stop(self) -> None:
         """Call when table manager is stopping."""
-        await cast(_App, self.app)._fetcher.stop()
-        if self._recovery:
-            await self._recovery.stop()
-        for table in self.values():
-            await table.stop()
+        pass
 
     def on_partitions_revoked(self, revoked: Set[TP]) -> None:
         """Call when cluster is rebalancing and partitions revoked."""
-        T = traced_from_parent_span()
-        T(self.recovery.on_partitions_revoked)(revoked)
+        pass
 
     async def on_rebalance(self,
                            assigned: Set[TP],
@@ -194,7 +149,4 @@ class TableManager(Service, TableManagerT):
         await T(self.recovery.on_rebalance)(assigned, revoked, newly_assigned)
 
     async def wait_until_recovery_completed(self) -> bool:
-        if (self.recovery.started and not
-                self.app.producer_only and not self.app.client_only):
-            return await self.wait_for_stopped(self.recovery.completed)
-        return False
+        pass

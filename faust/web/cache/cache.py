@@ -59,37 +59,7 @@ class Cache(CacheT):
             @wraps(fun)
             async def cached(view: View, request: Request, *args: Any,
                              **kwargs: Any) -> Response:
-                key: Optional[str] = None
-                is_head = request.method.upper() == 'HEAD'
-                if self.can_cache_request(request):
-                    key = self.key_for_request(request, key_prefix, 'GET',
-                                               include_headers)
-
-                    response = await self.get_view(key, view)
-                    if response is not None:
-                        logger.info('Found cached response for %r', key)
-                        return response
-                    if is_head:
-                        response = await self.get_view(
-                            self.key_for_request(request, key_prefix, 'HEAD',
-                                                 include_headers),
-                            view,
-                        )
-                        if response is not None:
-                            logger.info('Found cached HEAD response for %r',
-                                        key)
-                            return response
-
-                logger.info('No cache found for %r', key)
-                res = await fun(view, request, *args, **kwargs)
-
-                if key is not None and self.can_cache_response(request, res):
-                    logger.info('Saving cache for key %r', key)
-                    if is_head:
-                        key = self.key_for_request(request, key_prefix, 'HEAD',
-                                                   include_headers)
-                    await self.set_view(key, view, res, timeout)
-                return res
+                pass
 
             return cached
 

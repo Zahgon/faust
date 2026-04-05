@@ -116,17 +116,7 @@ class ModelOptions(abc.ABC):
     has_secret_fields: bool = False
 
     def clone_defaults(self) -> 'ModelOptions':
-        new_options = type(self)()
-        new_options.serializer = self.serializer
-        new_options.namespace = self.namespace
-        new_options.include_metadata = self.include_metadata
-        new_options.polymorphic_fields = self.polymorphic_fields
-        new_options.allow_blessed_key = self.allow_blessed_key
-        new_options.isodates = self.isodates
-        new_options.decimals = self.decimals
-        new_options.coerce = self.coerce
-        new_options.coercions = dict(self.coercions)
-        return new_options
+        pass
 
 
 base = abc.ABC if abc_compatible_with_init_subclass else object

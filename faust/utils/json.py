@@ -102,15 +102,7 @@ def str_to_decimal(s: str, maxlen: int = DECIMAL_MAXLEN) -> Optional[Decimal]:
     Returns:
         Decimal: Converted number.
     """
-    if s is None:
-        return None
-    if len(s) > maxlen:
-        raise ValueError(
-            f'string of length {len(s)} is longer than limit ({maxlen})')
-    v = Decimal(s)
-    if not v.is_finite():  # check for Inf/NaN/sNaN/qNaN
-        raise ValueError(f'Illegal value in decimal: {s!r}')
-    return v
+    pass
 
 
 def on_default(o: Any,
@@ -125,27 +117,7 @@ def on_default(o: Any,
                _str: Callable[[Any], str] = str,
                _list: Callable = list,
                textual: TypeTuple[Any] = TEXTUAL_TYPES) -> Any:
-    if _isinstance(o, textual):
-        return _str(o)
-    elif _isinstance(o, maps):
-        return _dict(o)
-    elif _isinstance(o, dates):
-        if not _isinstance(o, has_time):
-            o = datetime.datetime(o.year, o.month, o.day, 0, 0, 0, 0)
-        r = o.isoformat()
-        if r.endswith('+00:00'):
-            r = r[:-6] + 'Z'
-        return r
-    elif isinstance(o, value_delegate):
-        return o.value
-    elif isinstance(o, sequences):
-        return _list(o)
-    else:
-        to_json = getattr(o, '__json__', None)
-        if to_json is not None:
-            return to_json()
-        raise TypeError(
-            f'JSON cannot serialize {type(o).__name__!r}: {o!r}')
+    pass
 
 
 class JSONEncoder(json.JSONEncoder):
@@ -158,7 +130,7 @@ class JSONEncoder(json.JSONEncoder):
     def default(self, o: Any, *,
                 callback: Callable[[Any], Any] = on_default) -> Any:
         """Try to convert non-built-in json type to json."""
-        return callback(o)
+        pass
 
 
 if orjson is not None:  # pragma: no cover

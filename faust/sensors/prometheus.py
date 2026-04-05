@@ -162,74 +162,45 @@ class PrometheusMonitor(Monitor):
 
     def on_message_in(self, tp: TP, offset: int, message: Message) -> None:
         """Call before message is delegated to streams."""
-        super().on_message_in(tp, offset, message)
-
-        self.messages_received.inc()
-        self.active_messages.inc()
-        self.messages_received_per_topics.labels(topic=tp.topic).inc()
-        self.messages_received_per_topics_partition.labels(
-            topic=tp.topic, partition=tp.partition).set(offset)
+        pass
 
     def on_stream_event_in(self, tp: TP, offset: int, stream: StreamT,
                            event: EventT) -> typing.Optional[typing.Dict]:
         """Call when stream starts processing an event."""
-        state = super().on_stream_event_in(tp, offset, stream, event)
-        self.total_events.inc()
-        self.total_active_events.inc()
-        self.total_events_per_stream.labels(
-            stream=f'stream.{self._stream_label(stream)}.events').inc()
-
-        return state
+        pass
 
     def _stream_label(self, stream: StreamT) -> str:
-        return self._normalize(
-            stream.shortlabel.lstrip('Stream:'),
-        ).strip('_').lower()
+        pass
 
     def on_stream_event_out(self, tp: TP, offset: int, stream: StreamT,
                             event: EventT, state: typing.Dict = None) -> None:
         """Call when stream is done processing an event."""
-        super().on_stream_event_out(tp, offset, stream, event, state)
-        self.total_active_events.dec()
-        self.events_runtime_latency.observe(
-            self.secs_to_ms(self.events_runtime[-1]))
+        pass
 
     def on_message_out(self,
                        tp: TP,
                        offset: int,
                        message: Message) -> None:
         """Call when message is fully acknowledged and can be committed."""
-        super().on_message_out(tp, offset, message)
-        self.active_messages.dec()
+        pass
 
     def on_table_get(self, table: CollectionT, key: typing.Any) -> None:
         """Call when value in table is retrieved."""
-        super().on_table_get(table, key)
-        self.table_operations.labels(
-            table=f'table.{table.name}',
-            operation=self.KEYS_RETRIEVED).inc()
+        pass
 
     def on_table_set(self, table: CollectionT, key: typing.Any,
                      value: typing.Any) -> None:
         """Call when new value for key in table is set."""
-        super().on_table_set(table, key, value)
-        self.table_operations.labels(
-            table=f'table.{table.name}',
-            operation=self.KEYS_UPDATED).inc()
+        pass
 
     def on_table_del(self, table: CollectionT, key: typing.Any) -> None:
         """Call when key in a table is deleted."""
-        super().on_table_del(table, key)
-        self.table_operations.labels(
-            table=f'table.{table.name}',
-            operation=self.KEYS_DELETED).inc()
+        pass
 
     def on_commit_completed(self, consumer: ConsumerT,
                             state: typing.Any) -> None:
         """Call when consumer commit offset operation completed."""
-        super().on_commit_completed(consumer, state)
-        self.consumer_commit_latency.observe(
-            self.ms_since(typing.cast(float, state)))
+        pass
 
     def on_send_initiated(self, producer: ProducerT, topic: str,
                           message: PendingMessage,
@@ -255,36 +226,24 @@ class PrometheusMonitor(Monitor):
                       exc: BaseException,
                       state: typing.Any) -> None:
         """Call when producer was unable to publish message."""
-        super().on_send_error(producer, exc, state)
-        self.total_error_messages_sent.inc()
-        self.producer_error_send_latency.observe(
-            self.ms_since(typing.cast(float, state)))
+        pass
 
     def on_assignment_error(self,
                             assignor: PartitionAssignorT,
                             state: typing.Dict,
                             exc: BaseException) -> None:
         """Partition assignor did not complete assignor due to error."""
-        super().on_assignment_error(assignor, state, exc)
-        self.assignment_operations.labels(operation=self.ERROR).inc()
-        self.assign_latency.observe(
-            self.ms_since(state['time_start']))
+        pass
 
     def on_assignment_completed(self,
                                 assignor: PartitionAssignorT,
                                 state: typing. Dict) -> None:
         """Partition assignor completed assignment."""
-        super().on_assignment_completed(assignor, state)
-        self.assignment_operations.labels(operation=self.COMPLETED).inc()
-        self.assign_latency.observe(
-            self.ms_since(state['time_start']))
+        pass
 
     def on_rebalance_start(self, app: AppT) -> typing.Dict:
         """Cluster rebalance in progress."""
-        state = super().on_rebalance_start(app)
-        self.total_rebalances.inc()
-
-        return state
+        pass
 
     def on_rebalance_return(self, app: AppT, state: typing.Dict) -> None:
         """Consumer replied assignment is done to broker."""
@@ -296,10 +255,7 @@ class PrometheusMonitor(Monitor):
 
     def on_rebalance_end(self, app: AppT, state: typing.Dict) -> None:
         """Cluster rebalance fully completed (including recovery)."""
-        super().on_rebalance_end(app, state)
-        self.total_rebalances_recovering.dec()
-        self.revalance_done_latency.observe(
-            self.ms_since(state['time_end']))
+        pass
 
     def count(self, metric_name: str, count: int = 1) -> None:
         """Count metric by name."""
@@ -308,16 +264,11 @@ class PrometheusMonitor(Monitor):
 
     def on_tp_commit(self, tp_offsets: TPOffsetMapping) -> None:
         """Call when offset in topic partition is committed."""
-        super().on_tp_commit(tp_offsets)
-        for tp, offset in tp_offsets.items():
-            self.topic_partition_offset_commited.labels(
-                topic=tp.topic, partition=tp.partition).set(offset)
+        pass
 
     def track_tp_end_offset(self, tp: TP, offset: int) -> None:
         """Track new topic partition end offset for monitoring lags."""
-        super().track_tp_end_offset(tp, offset)
-        self.topic_partition_end_offset.labels(
-            topic=tp.topic, partition=tp.partition).set(offset)
+        pass
 
     def on_web_request_end(self,
                            app: AppT,
@@ -327,20 +278,11 @@ class PrometheusMonitor(Monitor):
                            *,
                            view: web.View = None) -> None:
         """Web server finished working on request."""
-        super().on_web_request_end(app, request, response, state, view=view)
-        status_code = int(state['status_code'])
-        self.http_status_codes.labels(status_code=status_code).inc()
-        self.http_latency.observe(
-            self.ms_since(state['time_end']))
+        pass
 
     def expose_metrics(self) -> None:
         """Expose promethues metrics using the current aiohttp application."""
         @self.app.page(self.pattern)
         async def metrics_handler(self: _web.View,
                                   request: _web.Request) -> _web.Response:
-            headers = {
-                'Content-Type': 'text/plain; version=0.0.4; charset=utf-8',
-            }
-
-            return cast(_web.Response, Response(
-                body=generate_latest(REGISTRY), headers=headers, status=200))
+            pass

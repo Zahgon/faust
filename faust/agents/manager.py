@@ -53,46 +53,24 @@ class AgentManager(Service, AgentManagerT, ManagedUserDict):
 
     async def on_start(self) -> None:
         """Call when agents are being started."""
-        self.update_topic_index()
-        for agent in self.values():
-            await agent.maybe_start()
-        self._agents_started.set()
+        pass
 
     def actor_tracebacks(self) -> Mapping[str, List[str]]:
-        return {
-            name: agent.actor_tracebacks()
-            for name, agent in self.items()
-        }
+        pass
 
     def human_tracebacks(self) -> str:
-        return '\n'.join([
-            self.traceback_header,
-            '\n'.join(
-                self.traceback_format.format(
-                    name=name,
-                    traceback=traceback,
-                )
-                for name, traceback in self.actor_tracebacks().items()
-            ),
-            self.traceback_footer,
-        ])
+        pass
 
     async def wait_until_agents_started(self) -> None:
-        if not self.app.producer_only and not self.app.client_only:
-            await self.wait_for_stopped(self._agents_started)
+        pass
 
     def service_reset(self) -> None:
         """Reset service state on restart."""
-        [agent.service_reset() for agent in self.values()]
-        super().service_reset()
+        pass
 
     async def on_stop(self) -> None:
         """Call when agents are being stopped."""
-        for agent in self.values():
-            try:
-                await asyncio.shield(agent.stop())
-            except asyncio.CancelledError:
-                pass
+        pass
 
     async def stop(self) -> None:
         """Stop all running agents."""
@@ -107,11 +85,7 @@ class AgentManager(Service, AgentManagerT, ManagedUserDict):
 
     def update_topic_index(self) -> None:
         """Update indices."""
-        # keep mapping from topic name to set of agents.
-        by_topic_index = self._by_topic
-        for agent in self.values():
-            for topic in agent.get_topic_names():
-                by_topic_index[topic].add(agent)
+        pass
 
     async def on_rebalance(self,
                            revoked: Set[TP],

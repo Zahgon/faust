@@ -35,9 +35,7 @@ def patch_aiohttp_session() -> None:
             session: aiohttp.ClientSession,
             trace_config_ctx: SimpleNamespace,
             params: aiohttp.TraceRequestStartParams) -> None:
-        test = current_test_stack.top
-        if test is not None:
-            params.headers.update(test.as_headers())
+        pass
 
     class ClientSession(client.ClientSession):
 

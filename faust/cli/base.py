@@ -175,11 +175,7 @@ def compat_option(
     def _callback(ctx: click.Context,  # pragma: no cover
                   param: click.Parameter,
                   value: Any) -> Any:
-        state = ctx.ensure_object(State)
-        prev_value = getattr(state, state_key, None)
-        if prev_value is None and value != param.default:
-            setattr(state, state_key, value)
-        return callback(ctx, param, value) if callback else value
+        pass
 
     return option(
         *args, callback=_callback, expose_value=expose_value, **kwargs)
@@ -347,12 +343,10 @@ def _apply_options(options: OptionSequence) -> OptionDecorator:
 class _Group(click.Group):
 
     def get_help(self, ctx: click.Context) -> str:
-        self._maybe_import_app()
-        return super().get_help(ctx)
+        pass
 
     def get_usage(self, ctx: click.Context) -> str:
-        self._maybe_import_app()
-        return super().get_usage(ctx)
+        pass
 
     def _maybe_import_app(self, argv: Sequence[str] = sys.argv) -> None:
         # This is here so that custom AppCommand defined in example/myapp.py
@@ -363,34 +357,13 @@ class _Group(click.Group):
         # This is not necessary when using app.main(), since that always
         # imports the app module before creating the cli() object:
         #   $ python example/myapp.py --help
-        workdir = self._extract_param(argv, '-W', '--workdir')
-        if workdir:
-            os.chdir(Path(workdir).absolute())
-        appstr = self._extract_param(argv, '-A', '--app')
-        if appstr is not None:
-            find_app(appstr)
+        pass
 
     def _extract_param(self,
                        argv: Sequence[str],
                        shortopt: str,
                        longopt: str) -> Optional[str]:
-        for i, arg in enumerate(argv):
-            if arg == shortopt:
-                try:
-                    return argv[i + 1]
-                except IndexError:
-                    raise click.UsageError(f'Missing argument for {shortopt}')
-            elif arg.startswith(longopt):
-                if '=' in arg:
-                    _, _, value = arg.partition('=')
-                    return value
-                else:
-                    try:
-                        return argv[i + 1]
-                    except IndexError:
-                        raise click.UsageError(
-                            f'Missing argument for {longopt}')
-        return None
+        pass
 
     @no_type_check  # mypy bugs out on this
     def make_context(self,
@@ -402,14 +375,7 @@ class _Group(click.Group):
                      stderr: IO = None,
                      side_effects: bool = True,
                      **extra: Any) -> click.Context:
-        ctx = super().make_context(info_name, args, **extra)
-        self._maybe_import_app()
-        root = cast(_FaustRootContextT, ctx.find_root())
-        root.app = app
-        root.stdout = stdout
-        root.stderr = stderr
-        root.side_effects = side_effects
-        return ctx
+        pass
 
 
 # This is the thing that app.main(), ``python -m faust -A ...``,
@@ -553,12 +519,12 @@ class Command(abc.ABC):
     @classmethod
     def parse(cls, argv: Sequence[str]) -> Mapping:
         """Parse command-line arguments in ``argv`` and return mapping."""
-        return cls._parse(argv, standalone_mode=False)
+        pass
 
     @staticmethod
     @click.command()
     def _parse(**kwargs: Any) -> Mapping:  # pragma: no cover
-        return kwargs
+        pass
 
     def __init__(self, ctx: click.Context, *args: Any, **kwargs: Any) -> None:
         self.ctx = ctx
@@ -593,10 +559,7 @@ class Command(abc.ABC):
 
     async def execute(self, *args: Any, **kwargs: Any) -> Any:
         """Execute command."""
-        try:
-            await self.run(*args, **kwargs)
-        finally:
-            await self.on_stop()
+        pass
 
     async def on_stop(self) -> None:
         """Call after command executed."""
@@ -612,13 +575,7 @@ class Command(abc.ABC):
 
     def run_using_worker(self, *args: Any, **kwargs: Any) -> NoReturn:
         """Execute command using :class:`faust.Worker`."""
-        loop = asyncio.get_event_loop()
-        args = self.args + args
-        kwargs = {**self.kwargs, **kwargs}
-        service = self.as_service(loop, *args, **kwargs)
-        worker = self.worker_for_service(service, loop)
-        self.on_worker_created(worker)
-        raise worker.execute_from_commandline()
+        pass
 
     def on_worker_created(self, worker: Worker) -> None:
         """Call when creating :class:`faust.Worker` to execute this command."""
@@ -628,34 +585,17 @@ class Command(abc.ABC):
                    loop: asyncio.AbstractEventLoop,
                    *args: Any, **kwargs: Any) -> ServiceT:
         """Wrap command in a :class:`mode.Service` object."""
-        return Service.from_awaitable(
-            self.execute(*args, **kwargs),
-            name=type(self).__name__,
-            loop=loop or asyncio.get_event_loop())
+        pass
 
     def worker_for_service(self,
                            service: ServiceT,
                            loop: asyncio.AbstractEventLoop = None) -> Worker:
         """Create :class:`faust.Worker` instance for this command."""
-        return self._Worker(
-            service,
-            debug=self.debug,
-            quiet=self.quiet,
-            stdout=self.stdout,
-            stderr=self.stderr,
-            loglevel=self.loglevel,
-            logfile=self.logfile,
-            blocking_timeout=self.blocking_timeout,
-            console_port=self.console_port,
-            redirect_stdouts=self.redirect_stdouts or False,
-            redirect_stdouts_level=self.redirect_stdouts_level,
-            loop=loop or asyncio.get_event_loop(),
-            daemon=self.daemon,
-        )
+        pass
 
     @property
     def _Worker(self) -> Type[Worker]:
-        return Worker
+        pass
 
     def tabulate(self,
                  data: terminal.TableDataT,
@@ -674,33 +614,19 @@ class Command(abc.ABC):
             If the :option:`--json <faust --json>` option is enabled
             this returns json instead.
         """
-        if self.json:
-            return self._tabulate_json(data, headers=headers)
-        if headers:
-            data = [headers] + list(data)
-        title = self.bold(self.color(title_color, title))
-        table = self.table(data, title=title, **kwargs)
-        if wrap_last_row:
-            # slow, but not big data
-            data = [
-                list(item[:-1]) + [self._table_wrap(table, item[-1])]
-                for item in data
-            ]
-        return table.table
+        pass
 
     def _tabulate_json(self,
                        data: terminal.TableDataT,
                        headers: Sequence[str] = None) -> str:
-        if headers:
-            return json.dumps([dict(zip(headers, row)) for row in data])
-        return json.dumps(data)
+        pass
 
     def table(self,
               data: terminal.TableDataT,
               title: str = '',
               **kwargs: Any) -> terminal.Table:
         """Format table data as ANSI/ASCII table."""
-        return terminal.table(data, title=title, target=sys.stdout, **kwargs)
+        pass
 
     def color(self, name: str, text: str) -> str:
         """Return text having a certain color by name.
@@ -712,24 +638,22 @@ class Command(abc.ABC):
         See Also:
             :pypi:`colorclass`: for a list of available colors.
         """
-        return Color(f'{{{name}}}{text}{{/{name}}}')
+        pass
 
     def dark(self, text: str) -> str:
         """Return cursor text."""
-        return self.color('autoblack', text)
+        pass
 
     def bold(self, text: str) -> str:
         """Return text in bold."""
-        return self.color('b', text)
+        pass
 
     def bold_tail(self, text: str, *, sep: str = '.') -> str:
         """Put bold emphasis on the last part of a ``foo.bar.baz`` string."""
-        head, fsep, tail = text.rpartition(sep)
-        return fsep.join([head, self.bold(tail)])
+        pass
 
     def _table_wrap(self, table: terminal.Table, text: str) -> str:
-        max_width = max(table.column_max_width(1), 10)
-        return '\n'.join(wrap(text, max_width))
+        pass
 
     def say(self, message: str,
             file: IO = None,
@@ -765,29 +689,29 @@ class Command(abc.ABC):
     @property
     def loglevel(self) -> str:
         """Return the log level used for this command."""
-        return self._loglevel or DEFAULT_LOGLEVEL
+        pass
 
     @loglevel.setter
     def loglevel(self, level: str) -> None:
-        self._loglevel = level
+        pass
 
     @property
     def blocking_timeout(self) -> float:
         """Return the blocking timeout used for this command."""
-        return self._blocking_timeout or 0.0
+        pass
 
     @blocking_timeout.setter
     def blocking_timeout(self, timeout: float) -> None:
-        self._blocking_timeout = timeout
+        pass
 
     @property
     def console_port(self) -> int:
         """Return the :pypi:`aiomonitor` console port."""
-        return self._console_port or CONSOLE_PORT
+        pass
 
     @console_port.setter
     def console_port(self, port: int) -> None:
-        self._console_port = port
+        pass
 
 
 class AppCommand(Command):
@@ -890,18 +814,7 @@ class AppCommand(Command):
 
     async def on_stop(self) -> None:
         """Call after command executed."""
-        await super().on_stop()
-        app = cast(_App, self.app)
-        # If command started the producer, we should also stop that
-        #   - this will flush any buffers before exiting.
-        if app._producer is not None and app._producer.started:
-            await app._producer.stop()
-        # If command started the app, we should stop it.
-        #   - could have app.client_only, or app.producer_only set.
-        if app.started:
-            await app.stop()
-        if app._http_client is not None:
-            await app._maybe_close_http_client()
+        pass
 
     def to_key(self, typ: Optional[str], key: str) -> Any:
         """Convert command-line argument string to model (key).
@@ -915,7 +828,7 @@ class AppCommand(Command):
             for the key (e.g. ``"json"``), as set by the
             :option:`--key-serializer <faust send --key-serializer>` option.
         """
-        return self.to_model(typ, key, self.key_serializer)
+        pass
 
     def to_value(self, typ: Optional[str], value: str) -> Any:
         """Convert command-line argument string to model (value).
@@ -930,7 +843,7 @@ class AppCommand(Command):
             :option:`--value-serializer <faust send --value-serializer>`
             option.
         """
-        return self.to_model(typ, value, self.value_serializer)
+        pass
 
     def to_model(self,
                  typ: Optional[str],
@@ -953,35 +866,15 @@ class AppCommand(Command):
             :option:`--value-serializer <faust send --value-serializer>`
             option.
         """
-        if typ:
-            model: ModelT = self.import_relative_to_app(typ)
-            return model.loads(want_bytes(value), serializer=serializer)
-        return want_bytes(value)
+        pass
 
     def import_relative_to_app(self, attr: str) -> Any:
         """Import string like "module.Model", or "Model" to model class."""
-        try:
-            return symbol_by_name(attr)
-        except ImportError as original_exc:
-            if not self.app.conf.origin:
-                raise
-            root, _, _ = self.app.conf.origin.partition(':')
-            try:
-                return symbol_by_name(f'{root}.models.{attr}')
-            except ImportError:
-                try:
-                    return symbol_by_name(f'{root}.{attr}')
-                except ImportError:
-                    raise original_exc from original_exc
+        pass
 
     def to_topic(self, entity: str) -> Any:
         """Convert topic name given on command-line to ``app.topic()``."""
-        if not entity:
-            raise self.UsageError('Missing topic/@agent name')
-        if entity.startswith('@'):
-            # actor prefix: e.g. `faust send @myactorname`
-            return self.import_relative_to_app(entity[1:])
-        return self.app.topic(entity)
+        pass
 
     def abbreviate_fqdn(self, name: str, *, prefix: str = '') -> str:
         """Abbreviate fully-qualified Python name, by removing origin.
@@ -1002,18 +895,16 @@ class AppCommand(Command):
             ...           'examples.other.Foo', prefix='[...]')
             'examples.other.foo'
         """
-        if self.app.conf.origin:
-            return text.abbr_fqdn(self.app.conf.origin, name, prefix=prefix)
-        return ''
+        pass
 
     @property
     def blocking_timeout(self) -> float:
         """Return the blocking timeout used for this command."""
-        return self._blocking_timeout or self.app.conf.blocking_timeout
+        pass
 
     @blocking_timeout.setter
     def blocking_timeout(self, timeout: float) -> None:
-        self._blocking_timeout = timeout
+        pass
 
 
 def call_command(command: str,
@@ -1022,17 +913,4 @@ def call_command(command: str,
                  stderr: IO = None,
                  side_effects: bool = False,
                  **kwargs: Any) -> Tuple[int, IO, IO]:
-    exitcode: int = 0
-    if stdout is None:
-        stdout = io.StringIO()
-    if stderr is None:
-        stderr = io.StringIO()
-    try:
-        cli(args=[command] + (args or []),
-            side_effects=side_effects,
-            stdout=stdout,
-            stderr=stderr,
-            **kwargs)
-    except SystemExit as exc:
-        exitcode = exc.code
-    return exitcode, stdout, stderr
+    pass

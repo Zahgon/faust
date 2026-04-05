@@ -86,9 +86,7 @@ class WindowedKeysView(KeysView):
 
     def delta(self, d: Seconds, event: EventT = None) -> Iterator[Any]:
         """Return all keys present in window ±n seconds ago."""
-        wrapper = cast(WindowWrapper, self._mapping)
-        for key, _ in wrapper._items_delta(d, event or self.event):
-            yield key
+        pass
 
 
 class WindowedItemsView(WindowedItemsViewT):
@@ -122,8 +120,7 @@ class WindowedItemsView(WindowedItemsViewT):
               d: Seconds,
               event: EventT = None) -> Iterator[Tuple[Any, Any]]:
         """Return all items present in window ±n seconds ago."""
-        wrapper = cast(WindowWrapper, self._mapping)
-        return wrapper._items_delta(d, event or self.event)
+        pass
 
 
 class WindowedValuesView(WindowedValuesViewT):
@@ -158,9 +155,7 @@ class WindowedValuesView(WindowedValuesViewT):
 
     def delta(self, d: Seconds, event: EventT = None) -> Iterator[Any]:
         """Return all values present in window ±n seconds ago."""
-        wrapper = cast(WindowWrapper, self._mapping)
-        for _, value in wrapper._items_delta(d, event or self.event):
-            yield value
+        pass
 
 
 class WindowSet(WindowSetT[KT, VT]):
@@ -218,8 +213,7 @@ class WindowSet(WindowSetT[KT, VT]):
         setting used (:meth:`relative_to_now`, :meth:`relative_to_stream`,
         :meth:`relative_to_field`, etc.)
         """
-        return cast(_Table, self.table)._windowed_timestamp(
-            self.key, self.wrapper.get_timestamp(event or self.event))
+        pass
 
     def now(self) -> VT:
         """Return current value, using the current system time."""
@@ -233,8 +227,7 @@ class WindowSet(WindowSetT[KT, VT]):
 
     def delta(self, d: Seconds, event: EventT = None) -> VT:
         """Return value as it was ±n seconds ago."""
-        table = cast(_Table, self.table)
-        return table._windowed_delta(self.key, d, event or self.event)
+        pass
 
     def __unauthorized_dict_operation(self, operation: str) -> NoReturn:
         raise NotImplementedError(
@@ -355,15 +348,15 @@ class WindowWrapper(WindowWrapperT):
     @property
     def name(self) -> str:
         """Return the name of this table."""
-        return self.table.name
+        pass
 
     def relative_to(self, ts: RelativeArg) -> WindowWrapperT:
         """Configure the time-relativity of this windowed table."""
-        return self.clone(relative_to=ts)
+        pass
 
     def relative_to_now(self) -> WindowWrapperT:
         """Configure table to be time-relative to the system clock."""
-        return self.clone(relative_to=self.table._relative_now)
+        pass
 
     def relative_to_field(self, field: FieldDescriptorT) -> WindowWrapperT:
         """Configure table to be time-relative to a field in the stream.
@@ -433,9 +426,7 @@ class WindowWrapper(WindowWrapperT):
 
     def on_del_key(self, key: Any) -> None:
         """Call when a key is deleted from this table."""
-        key_index_table = self.key_index_table
-        if key_index_table is not None:
-            key_index_table.pop(key, None)
+        pass
 
     def __delitem__(self, key: Any) -> None:
         self.on_del_key(key)
@@ -488,13 +479,7 @@ class WindowWrapper(WindowWrapperT):
         return WindowedItemsView(self, event or current_event())
 
     def _items(self, event: EventT = None) -> Iterator[Tuple[Any, Any]]:
-        table = cast(_Table, self.table)
-        timestamp = self.get_timestamp(event)
-        for key in self._keys():
-            try:
-                yield key, table._windowed_timestamp(key, timestamp)
-            except KeyError:
-                pass
+        pass
 
     def _items_now(self) -> Iterator[Tuple[Any, Any]]:
         table = cast(_Table, self.table)
@@ -516,20 +501,12 @@ class WindowWrapper(WindowWrapperT):
 
     def _items_delta(self, d: Seconds,
                      event: EventT = None) -> Iterator[Any]:
-        table = cast(_Table, self.table)
-        for key in self._keys():
-            try:
-                yield key, table._windowed_delta(key, d, event)
-            except KeyError:
-                pass
+        pass
 
     def as_ansitable(self, title: str = '{table.name}',
                      **kwargs: Any) -> str:
         """Draw table as a terminal ANSI table."""
-        return dict_as_ansitable(
-            self,
-            title=title.format(table=self.table),
-            **kwargs)
+        pass
 
     @property
     def get_relative_timestamp(self) -> Optional[RelativeHandler]:

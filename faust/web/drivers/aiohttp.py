@@ -58,12 +58,11 @@ class ServerThread(ServiceThread):
 
     async def on_start(self) -> None:
         """Call in parent thread when the service thread is starting."""
-        await self.web.start_server()
+        pass
 
     async def on_thread_stop(self) -> None:
         """Call in thread when the service stops."""
-        # on_stop() executes in parent thread, on_thread_stop in the thread.
-        await self.web.stop_server()
+        pass
 
 
 class Server(Service):
@@ -75,11 +74,11 @@ class Server(Service):
 
     async def on_start(self) -> None:
         """Call when the web server starts."""
-        await self.web.start_server()
+        pass
 
     async def on_stop(self) -> None:
         """Call when the web server stops."""
-        await self.web.stop_server()
+        pass
 
 
 class Web(base.Web):
@@ -109,22 +108,14 @@ class Web(base.Web):
     @property
     def cors(self) -> CorsConfig:
         """Return CORS config object."""
-        if self._cors is None:
-            self._cors = aiohttp_cors.setup(
-                self.web_app, defaults=self.cors_options)
-        return self._cors
+        pass
 
     async def on_start(self) -> None:
         """Call when the embedded web server starts.
 
         Only used for `faust worker`, not when using :meth:`wsgi`.
         """
-        cors = self.cors
-        assert cors
-        self.init_server()
-        server_cls = ServerThread if self.app.conf.web_in_thread else Server
-        self._thread = server_cls(self, loop=self.loop, beacon=self.beacon)
-        self.add_dependency(self._thread)
+        pass
 
     async def wsgi(self) -> Any:
         """Call WSGI handler.
@@ -132,8 +123,7 @@ class Web(base.Web):
         Used by :pypi:`gunicorn` and other WSGI compatible hosts
         to access the Faust web entry point.
         """
-        self.init_server()
-        return self.web_app
+        pass
 
     def text(self, value: str, *,
              content_type: str = None,
@@ -156,13 +146,7 @@ class Web(base.Web):
              reason: str = None,
              headers: MutableMapping = None) -> base.Response:
         """Create HTML response from string, ``text/html`` content-type."""
-        return self.text(
-            value,
-            status=status,
-            content_type=content_type or 'text/html',
-            reason=reason,
-            headers=headers,
-        )
+        pass
 
     def json(self, value: Any, *,
              content_type: str = None,
@@ -239,7 +223,7 @@ class Web(base.Web):
         # but aiohttp doesn't recognize it as such and emits the warning.
         # To avoid that we just wrap it in an `async def` function
         async def _dispatch(request: base.Request) -> base.Response:
-            return await handler(request)
+            pass
         return _dispatch
 
     def add_static(self,
@@ -279,42 +263,29 @@ class Web(base.Web):
         )
 
     def _create_site(self) -> BaseSite:
-        return self._new_transport(self.app.conf.web_transport.scheme)
+        pass
 
     def _new_transport(self, type_: str) -> BaseSite:
-        return self._transport_handlers[type_]()
+        pass
 
     def _new_transport_tcp(self) -> BaseSite:
-        return TCPSite(
-            self._runner,
-            self.app.conf.web_bind,
-            self.app.conf.web_port,
-        )
+        pass
 
     def _new_transport_unix(self) -> BaseSite:
-        return UnixSite(
-            self._runner,
-            self.app.conf.web_transport.path,
-        )
+        pass
 
     async def start_server(self) -> None:
         """Start the web server."""
-        await self._runner.setup()
-        site = self._create_site()
-        await site.start()
+        pass
 
     async def stop_server(self) -> None:
         """Stop the web server."""
-        if self._runner:
-            await self._runner.cleanup()
-        await self._cleanup_app()
+        pass
 
     async def _cleanup_app(self) -> None:
-        if self.web_app is not None:
-            self.log.info('Cleanup')
-            await self.web_app.cleanup()
+        pass
 
     @property
     def _app(self) -> Application:
         # XXX compat alias
-        return self.web_app
+        pass

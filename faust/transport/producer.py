@@ -33,7 +33,7 @@ class ProducerBuffer(Service, ProducerBufferT):
         self.pending.put_nowait(fut)
 
     async def on_stop(self) -> None:
-        await self.flush()
+        pass
 
     async def flush(self) -> None:
         """Flush all messages (draining the buffer)."""
@@ -51,23 +51,10 @@ class ProducerBuffer(Service, ProducerBufferT):
 
     async def flush_atmost(self, n: int) -> int:
         """Flush at most ``n`` messages."""
-        get_pending = self.pending.get_nowait
-        send_pending = self._send_pending
-
-        if self.size:
-            for i in range(n):
-                try:
-                    msg = get_pending()
-                except QueueEmpty:
-                    return i
-                else:
-                    await send_pending(msg)
-            return n
-        else:
-            return 0
+        pass
 
     async def _send_pending(self, fut: FutureMessage) -> None:
-        await fut.message.channel.publish_message(fut, wait=False)
+        pass
 
     async def wait_until_ebb(self) -> None:
         """Wait until buffer is of an acceptable size.
@@ -82,23 +69,16 @@ class ProducerBuffer(Service, ProducerBufferT):
         To solve this, we have the conductor wait until the buffer
         is of an acceptable size before resuming stream processing flow.
         """
-        if self.size > self.max_messages:
-            await self.flush_atmost(self.max_messages)
+        pass
 
     @Service.task
     async def _handle_pending(self) -> None:
-        get_pending = self.pending.get
-        send_pending = self._send_pending
-        while not self.should_stop:
-            msg = await get_pending()
-            await send_pending(msg)
+        pass
 
     @property
     def size(self) -> int:
         """Current buffer size (messages waiting to be produced)."""
-        queue_items = self.pending._queue  # type: ignore
-        queue_items = cast(list, queue_items)
-        return len(queue_items)
+        pass
 
 
 class Producer(Service, ProducerT):
@@ -131,7 +111,7 @@ class Producer(Service, ProducerT):
         self.buffer = ProducerBuffer(loop=self.loop, beacon=self.beacon)
 
     async def on_start(self) -> None:
-        await self.add_runtime_dependency(self.buffer)
+        pass
 
     async def send(self, topic: str, key: Optional[bytes],
                    value: Optional[bytes],
@@ -144,7 +124,7 @@ class Producer(Service, ProducerT):
         raise NotImplementedError()
 
     def send_soon(self, fut: FutureMessage) -> None:
-        self.buffer.put(fut)
+        pass
 
     async def send_and_wait(self, topic: str, key: Optional[bytes],
                             value: Optional[bytes],
@@ -209,4 +189,4 @@ class Producer(Service, ProducerT):
 
     def supports_headers(self) -> bool:
         """Return :const:`True` if headers are supported by this transport."""
-        return False
+        pass
